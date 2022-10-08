@@ -1,0 +1,24 @@
+{
+  "name": "zinzi-core",
+  "version": "0.1.0",
+  "description": "zinzi.org core smart contract package",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha --timeout 10000"
+  },
+  "author": "zinzi.org",
+  "license": "ISC",
+  "dependencies": {
+    "@truffle/hdwallet-provider": "^2.0.14",
+    "fs-extra": "^10.1.0",
+    "mocha": "^10.0.0",
+    "solc": "^0.8.17",
+    "web3": "^1.7.5"
+  },
+  "devDependencies": {
+    "ganache-cli": "^6.12.2"
+  }
+}
