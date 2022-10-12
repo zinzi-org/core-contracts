@@ -19,6 +19,8 @@
     "web3": "^1.7.5"
   },
   "devDependencies": {
-    "ganache-cli": "^6.12.2"
+    "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+    "ganache-cli": "^6.12.2",
+    "hardhat": "^2.12.0"
   }
 }
