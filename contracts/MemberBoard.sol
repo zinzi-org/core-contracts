@@ -1,76 +1,42 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
+import "./Member.sol";
+import "./lib/Strings.sol";
+
 contract MemberBoard {
-    address public memberOne;
-    address public memberTwo;
-    address public memberThree;
+    address immutable _memberAddress;
 
-    address[] public applicantList;
-    mapping(address => address[]) applicantVotes;
-    mapping(address => int256) applicantPoints;
-    mapping(address => bool) activeApplicants;
+    address[3] public _boardMembers;
+    mapping(uint256 => uint256[]) _votesAgainst;
 
-    string public URL;
-    string public METAURL;
+    string public _memberMetaURL = "https://www.zini.org/member/";
+    string public _metaURL;
+
+    function getTokenURI(uint256 tokenId) public view returns (string memory) {
+        return string.concat(_memberMetaURL, Strings.toString(tokenId));
+    }
+
+    constructor(address memberAddress) {
+        _memberAddress = memberAddress;
+    }
+
+    modifier onlyBoardMember() {
+        require(
+            msg.sender == _boardMembers[0] ||
+                msg.sender == _boardMembers[1] ||
+                msg.sender == _boardMembers[2]
+        );
+        _;
+    }
 
     function isBoardMember(address who) public view returns (bool) {
-        return (who == memberOne || who == memberTwo || who == memberThree);
+        return (who == _boardMembers[0] ||
+            who == _boardMembers[1] ||
+            who == _boardMembers[2]);
     }
 
-    function getApplicants() public view returns (address[] memory) {
-        return applicantList;
-    }
-
-    function createApplicant() public payable {
-        require(!activeApplicants[msg.sender], "Already active applicant");
-        require(applicantPoints[msg.sender] > -3, "account rejected");
-        activeApplicants[msg.sender] = true;
-        applicantList.push(msg.sender);
-    }
-
-    function voteForApplicant(address applicant) public {
-        require(activeApplicants[applicant], "Not a applicant");
-        bool didVote = false;
-        for (uint256 i = 0; i < applicantVotes[applicant].length; i++) {
-            if (applicantVotes[applicant][i] == msg.sender) {
-                didVote = true;
-            }
-        }
-        require(!didVote, "Sender already voted");
-        applicantVotes[applicant].push(msg.sender);
-        applicantPoints[applicant] += 1;
-    }
-
-    function getApplicantVoteCount(address applicant)
-        public
-        view
-        returns (uint256)
-    {
-        return applicantVotes[applicant].length;
-    }
-
-    function approveApplicant(address applicant) public {
-        _burnApplicant(applicant);
-        delete applicantVotes[msg.sender];
-    }
-
-    function rejectApplicant(address applicant) public {
-        require(activeApplicants[applicant], "Invalid applicant address");
-        activeApplicants[applicant] = false;
-        applicantPoints[msg.sender] -= 1;
-        _burnApplicant(applicant);
-        delete applicantVotes[msg.sender];
-    }
-
-    function _burnApplicant(address applicant) internal {
-        uint256 index = 0;
-        for (index = 0; index < applicantList.length; index++) {
-            if (applicantList[index] == applicant) {
-                break;
-            }
-        }
-        applicantList[index] = applicantList[applicantList.length - 1];
-        applicantList.pop();
+    function setBoardURL(string memory url) public onlyBoardMember {
+        _metaURL = url;
     }
 }

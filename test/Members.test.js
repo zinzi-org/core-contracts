@@ -7,16 +7,14 @@ const web3 = new Web3(provider);
 const memberBoardFactoryCompiled = require('../build/MemberBoardFactory.json');
 const memberBoardCompiled = require('../build/MemberBoard.json');
 const memberNFTCompiled = require('../build/Member.json');
-const projectFactoryCompiled = require('../build/ProjectFactory.json');
-const projectCompiled = require('../build/Project.json');
-const proposalNFTCompiled = require('../build/Proposal.json');
+
 
 let accounts;
 
 let memberBoardFactory;
 let memberNFT;
-let projectFactory;
-let proposalNFT;
+
+
 
 
 async function baseFullSetup() {
@@ -33,13 +31,8 @@ async function baseFullSetup() {
         memberNFTAdress
     );
 
-    projectFactory = await new web3.eth.Contract(projectFactoryCompiled.abi)
-        .deploy({ data: projectFactoryCompiled.evm.bytecode.object })
-        .send({ from: accounts[1], gas: '1000000' });
 
-    proposalNFT = await new web3.eth.Contract(proposalNFTCompiled.abi)
-        .deploy({ data: proposalNFTCompiled.evm.bytecode.object, arguments: [memberNFT.options.address] })
-        .send({ from: accounts[1], gas: '3000000' });
+
 
 
 }
@@ -62,13 +55,6 @@ describe("Base Test Setup", () => {
         assert.ok(memberNFT.options.address);
     });
 
-    it('has project factory', async () => {
-        assert.ok(projectFactory.options.address);
-    });
-
-    it('has proposal nft', async () => {
-        assert.ok(proposalNFT.options.address);
-    });
 
     it('can create member board', async () => {
         await memberBoardFactory.methods.create("Harvard University").send({ from: accounts[0], gas: 1000000 })

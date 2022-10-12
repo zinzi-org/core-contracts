@@ -31,18 +31,20 @@ const memberBoardFactorySource = fs.readFileSync(memberBoardFactoryPath, "utf8")
 const memberBoardPath = path.resolve(__dirname, "contracts", "MemberBoard.sol");
 const memberBoardSource = fs.readFileSync(memberBoardPath, "utf8");
 
-const memberNFTPath = path.resolve(__dirname, "contracts", "MemberNFT.sol");
-const memberNFTSource = fs.readFileSync(memberNFTPath, "utf8");
+const memberPath = path.resolve(__dirname, "contracts", "Member.sol");
+const memberSource = fs.readFileSync(memberPath, "utf8");
 
-const projectFactoryPath = path.resolve(__dirname, "contracts", "ProjectFactory.sol");
-const projectFactorySource = fs.readFileSync(projectFactoryPath, "utf8");
+const userPath = path.resolve(__dirname, "contracts", "User.sol");
+const userSource = fs.readFileSync(userPath, "utf8");
 
-const projectPath = path.resolve(__dirname, "contracts", "Project.sol");
-const projectSource = fs.readFileSync(projectPath, "utf8");
+const governorPath = path.resolve(__dirname, "contracts", "Governor.sol");
+const governorSource = fs.readFileSync(governorPath, "utf8");
 
-const proposalNFTPath = path.resolve(__dirname, "contracts", "ProposalNFT.sol");
-const proposalNFTSource = fs.readFileSync(proposalNFTPath, "utf8");
+const governorCountingSimplePath = path.resolve(__dirname, "contracts", "GovernorCountingSimple.sol");
+const governorCountingSimplePathSource = fs.readFileSync(governorCountingSimplePath, "utf8");
 
+const governorSettingsPath = path.resolve(__dirname, "contracts", "GovernorSettings.sol");
+const governorSettingsSource = fs.readFileSync(governorSettingsPath, "utf8");
 
 
 var input = {
@@ -54,17 +56,11 @@ var input = {
         'MemberBoard.sol': {
             content: memberBoardSource
         },
-        'MemberNFT.sol': {
-            content: memberNFTSource
+        'Member.sol': {
+            content: memberSource
         },
-        'ProjectFactory.sol': {
-            content: projectFactorySource
-        },
-        'Project.sol': {
-            content: projectSource
-        },
-        'ProposalNFT.sol': {
-            content: proposalNFTSource
+        'User.sol': {
+            content: userSource
         }
     },
     settings: {
@@ -85,11 +81,8 @@ function findImports(path) {
     if (path === "lib/NoDelegateCall.sol") return { contents: `${noDelegateSource}` };
     if (path === "MemberBoardFactory.sol") return { contents: `${memberBoardFactorySource}` };
     if (path === "MemberBoard.sol") return { contents: `${memberBoardSource}` };
-    if (path === "MemberNFT.sol") return { contents: `${memberNFTSource}` };
-    if (path === "ProjectFactory.sol") return { contents: `${projectFactorySource}` };
-    if (path === "Project.sol") return { contents: `${projectSource}` };
-    if (path === "ProposalNFT.sol") return { contents: `${proposalNFTSource}` };
-
+    if (path === "Member.sol") return { contents: `${memberSource}` };
+    if (path === "User.sol") return { contents: `${userSource}` };
     if (path === "lib/ERC165.sol") return { contents: `${ERC165PathSource}` };
     if (path === "lib/IERC165.sol") return { contents: `${IERC165PathSource}` };
     if (path === "lib/IERC721.sol") return { contents: `${IERC721PathSource}` };
@@ -128,34 +121,22 @@ for (let contract in output.contracts["MemberBoard.sol"]) {
     );
 }
 
-for (let contract in output.contracts["MemberNFT.sol"]) {
+for (let contract in output.contracts["Member.sol"]) {
     fs.outputJsonSync(
         path.resolve(buildPath, contract.replace(':', '') + '.json'),
-        output.contracts["MemberNFT.sol"][contract]
+        output.contracts["Member.sol"][contract]
     );
 }
 
 
-for (let contract in output.contracts["ProjectFactory.sol"]) {
+for (let contract in output.contracts["User.sol"]) {
     fs.outputJsonSync(
         path.resolve(buildPath, contract.replace(':', '') + '.json'),
-        output.contracts["ProjectFactory.sol"][contract]
+        output.contracts["User.sol"][contract]
     );
 }
 
-for (let contract in output.contracts["Project.sol"]) {
-    fs.outputJsonSync(
-        path.resolve(buildPath, contract.replace(':', '') + '.json'),
-        output.contracts["Project.sol"][contract]
-    );
-}
 
-for (let contract in output.contracts["ProposalNFT.sol"]) {
-    fs.outputJsonSync(
-        path.resolve(buildPath, contract.replace(':', '') + '.json'),
-        output.contracts["ProposalNFT.sol"][contract]
-    );
-}
 
 
 

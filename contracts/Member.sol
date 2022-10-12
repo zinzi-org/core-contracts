@@ -9,6 +9,7 @@ import "./MemberBoardFactory.sol";
 import "./MemberBoard.sol";
 import "./lib/Strings.sol";
 import "./lib/ERC165.sol";
+import "./User.sol";
 
 contract Member is ERC165, IERC721, IERC721Metadata {
     using Strings for uint256;
@@ -18,9 +19,11 @@ contract Member is ERC165, IERC721, IERC721Metadata {
 
     mapping(uint256 => address) private _tokenToBoard;
     mapping(uint256 => address) private _owners;
+    mapping(uint256 => address) private _tokenIdToUser;
     mapping(address => uint256) private _balances;
     mapping(uint256 => address) private _tokenApprovals;
     mapping(address => mapping(address => bool)) private _operatorApprovals;
+
 
     uint256 public count = 0;
     address public boardMemberContractAddress;
@@ -33,20 +36,26 @@ contract Member is ERC165, IERC721, IERC721Metadata {
         MemberBoardFactory x = MemberBoardFactory(boardMemberContractAddress);
         bool isBoard = x.isBoard(boardAddress);
         require(isBoard, "Not a valid board address");
+
         MemberBoard b = MemberBoard(boardAddress);
         bool senderIsBoardMember = b.isBoardMember(msg.sender);
         require(senderIsBoardMember, "Must be a board member");
+
+        address userAddress = address(new User(address(this), count));
+        _tokenIdToUser[count] = userAddress;
+
         _safeMint(newMember, count);
         _tokenToBoard[count] = boardAddress;
         count += 1;
     }
 
     function mintToFirst(address who, address boardAddress) public {
-        MemberBoardFactory x = MemberBoardFactory(boardMemberContractAddress);
-        bool isBoard = x.isBoard(boardAddress);
-        require(!isBoard, "Board already exists");
         require(msg.sender == boardMemberContractAddress, "Wrong address");
         _safeMint(who, count);
+
+        address userAddress = address(new User(address(this), count));
+        _tokenIdToUser[count] = userAddress;
+
         _tokenToBoard[count] = boardAddress;
         count += 1;
     }
@@ -98,11 +107,9 @@ contract Member is ERC165, IERC721, IERC721Metadata {
         returns (string memory)
     {
         _requireMinted(tokenId);
-        return
-            string.concat(
-                "https://www.labor.land/member/",
-                Strings.toString(tokenId)
-            );
+        address memberBoardAddress = _tokenToBoard[tokenId];
+        MemberBoard memberBoardInstance = MemberBoard(memberBoardAddress);
+        return memberBoardInstance.getTokenURI(tokenId);
     }
 
     function getTokenIdGroupAddress(uint256 tokenId)
@@ -189,6 +196,8 @@ contract Member is ERC165, IERC721, IERC721Metadata {
         );
         _safeTransfer(from, to, tokenId, data);
     }
+
+    // =======================================================================================================================================
 
     function _safeTransfer(
         address from,
