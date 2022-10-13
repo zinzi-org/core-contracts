@@ -17,8 +17,9 @@ contract MemberBoard {
         return string.concat(_memberMetaURL, Strings.toString(tokenId));
     }
 
-    constructor(address memberAddress) {
+    constructor(address memberAddress, address sender) {
         _memberAddress = memberAddress;
+        _boardMembers[0] = sender;
     }
 
     modifier onlyBoardMember() {

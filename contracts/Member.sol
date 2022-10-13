@@ -25,7 +25,7 @@ contract Member is ERC165, IERC721, IERC721Metadata {
     mapping(address => mapping(address => bool)) private _operatorApprovals;
 
 
-    uint256 public count = 0;
+    uint256 public count = 1;
     address public boardMemberContractAddress;
 
     constructor() {

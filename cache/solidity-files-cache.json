@@ -1045,8 +1045,8 @@
       ]
     },
     "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\Member.sol": {
-      "lastModificationDate": 1665453588589,
-      "contentHash": "ae97f573f7f06ec6933edeff208ada15",
+      "lastModificationDate": 1665626899499,
+      "contentHash": "8589ef5011ab5d44065058fad4daa7e3",
       "sourceName": "contracts/Member.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -1126,8 +1126,8 @@
       ]
     },
     "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\MemberBoardFactory.sol": {
-      "lastModificationDate": 1665453556722,
-      "contentHash": "ba842196fb63447b0a5d93055d740692",
+      "lastModificationDate": 1665627275679,
+      "contentHash": "434a75d694bf76d4650b6431fb5d4262",
       "sourceName": "contracts/MemberBoardFactory.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -1164,8 +1164,8 @@
       ]
     },
     "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\MemberBoard.sol": {
-      "lastModificationDate": 1665453654011,
-      "contentHash": "0cd4cf87b58741c0f44774bd93d65610",
+      "lastModificationDate": 1665627289546,
+      "contentHash": "daf389d59dd2c2f46c6b2049e4b0b893",
       "sourceName": "contracts/MemberBoard.sol",
       "solcConfig": {
         "version": "0.8.17",

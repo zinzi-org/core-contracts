@@ -5,7 +5,7 @@ import "./MemberBoard.sol";
 import "./Member.sol";
 
 contract MemberBoardFactory {
-    event boardCreated(address);
+    event BoardCreated(address);
     mapping(address => string) public names;
     mapping(address => bool) public boards;
     address public memberAddress;
@@ -15,12 +15,12 @@ contract MemberBoardFactory {
     }
 
     function create(string memory newBoardName) public {
-        address boardAddress = address(new MemberBoard(memberAddress));
+        address boardAddress = address(new MemberBoard(memberAddress, msg.sender));
         names[boardAddress] = newBoardName;
         boards[boardAddress] = true;
         Member f = Member(memberAddress);
         f.mintToFirst(msg.sender, boardAddress);
-        emit boardCreated(boardAddress);
+        emit BoardCreated(boardAddress);
     }
 
     function isBoard(address whom) public view returns (bool) {

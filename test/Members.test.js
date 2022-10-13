@@ -1,62 +1,63 @@
-const assert = require('assert');
-const ganache = require('ganache-cli');
-const Web3 = new require('web3');
-const provider = ganache.provider();
-const web3 = new Web3(provider);
+const {
+    time,
+    loadFixture,
+} = require("@nomicfoundation/hardhat-network-helpers");
+const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
+const { expect } = require("chai");
+const { ethers } = require("hardhat");
 
-const memberBoardFactoryCompiled = require('../build/MemberBoardFactory.json');
-const memberBoardCompiled = require('../build/MemberBoard.json');
-const memberNFTCompiled = require('../build/Member.json');
+const memberCompiled = require("../artifacts/contracts/Member.sol/Member.json");
+const memberBoardCompiled = require("../artifacts/contracts/MemberBoard.sol/MemberBoard.json");
 
-
-let accounts;
-
-let memberBoardFactory;
-let memberNFT;
-
-
-
-
-async function baseFullSetup() {
-    accounts = await web3.eth.getAccounts();
-
-    memberBoardFactory = await new web3.eth.Contract(memberBoardFactoryCompiled.abi)
-        .deploy({ data: memberBoardFactoryCompiled.evm.bytecode.object })
-        .send({ from: accounts[1], gas: '5000000' });
-
-    var memberNFTAdress = await memberBoardFactory.methods.memberNFTAddress().call();
-
-    memberNFT = await new web3.eth.Contract(
-        memberNFTCompiled.abi,
-        memberNFTAdress
-    );
-
-
-
-
-
-}
 
 describe("Base Test Setup", () => {
 
-    before(async () => {
-        await baseFullSetup();
-    });
+    async function fixture() {
+        const [owner, otherAccount] = await ethers.getSigners();
 
-    it('has test accounts available', () => {
-        assert.ok(accounts.length > 0);
-    });
+        const BoardFactory = await ethers.getContractFactory("MemberBoardFactory");
+        const factory = await BoardFactory.deploy();
+        var memberAddress = await factory.memberAddress();
+        const memberContract = new ethers.Contract(memberAddress, memberCompiled.abi, owner);
 
-    it('has member board factory', async () => {
-        assert.ok(memberBoardFactory.options.address);
+        return { factory, memberContract, owner, otherAccount };
+    }
+
+    it('has board member factory with member board', async () => {
+        const { factory, memberContract, owner, otherAccount } = await loadFixture(fixture);
+
+        var symbol = await memberContract.symbol();
+        expect(symbol).to.equal("MM");
+
+        expect(await factory.create("Harvard MemberBoard")).to.emit(factory, "BoardCreated").withArgs(anyValue);
+
+        var balance = await memberContract.balanceOf(owner.address);
+        expect(balance).to.equal(1);
+
+        var obalance = await memberContract.balanceOf(otherAccount.address);
+        expect(obalance).to.equal(0);
+
+        var uri = await memberContract.tokenURI(balance);
+        expect(uri).to.equal("https://www.zini.org/member/1");
+
+        var groupId = await memberContract.getTokenIdGroupAddress(balance);
+
+        const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
+        expect(memberBoard.address).to.not.be.null;
+
+        var metaURL = await memberBoard._memberMetaURL();
+        expect(metaURL).to.equal("https://www.zini.org/member/");
+
+        var isBoardMember = await memberBoard.isBoardMember(owner.address);
+        expect(isBoardMember).to.eq(true);
     });
 
     it('has member nft', async () => {
-        assert.ok(memberNFT.options.address);
+
     });
 
 
     it('can create member board', async () => {
-        await memberBoardFactory.methods.create("Harvard University").send({ from: accounts[0], gas: 1000000 })
+
     });
 });
