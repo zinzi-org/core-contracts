@@ -516,8 +516,8 @@
       ]
     },
     "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\Zinzi.sol": {
-      "lastModificationDate": 1665454353163,
-      "contentHash": "e7a641dcad0aa0df6bbcc34c5d86c578",
+      "lastModificationDate": 1666476409966,
+      "contentHash": "689253aba9450d0bce203ef374440ad9",
       "sourceName": "contracts/Zinzi.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -551,7 +551,7 @@
         "./GovernorTimelockControl.sol"
       ],
       "versionPragmas": [
-        "^0.8.4"
+        "^0.8.17"
       ],
       "artifacts": [
         "Zinzi"
@@ -595,8 +595,8 @@
       ]
     },
     "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\GovernorCountingSimple.sol": {
-      "lastModificationDate": 1665453733036,
-      "contentHash": "b511295ee5e6ef805b68e99cbec8e10a",
+      "lastModificationDate": 1666476359578,
+      "contentHash": "4e1016d01509be7bd03b51874d0a6c56",
       "sourceName": "contracts/GovernorCountingSimple.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -625,15 +625,15 @@
         "./Governor.sol"
       ],
       "versionPragmas": [
-        "^0.8.0"
+        "^0.8.17"
       ],
       "artifacts": [
         "GovernorCountingSimple"
       ]
     },
     "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\GovernorVotes.sol": {
-      "lastModificationDate": 1665453820515,
-      "contentHash": "7c480bb9412f3609467811f43d370ca9",
+      "lastModificationDate": 1666476359578,
+      "contentHash": "bd747bdd146bc1d1a07f06873b4eb14c",
       "sourceName": "contracts/GovernorVotes.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -663,7 +663,7 @@
         "./lib/IVotes.sol"
       ],
       "versionPragmas": [
-        "^0.8.0"
+        "^0.8.17"
       ],
       "artifacts": [
         "GovernorVotes"
@@ -748,8 +748,8 @@
       ]
     },
     "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\lib\\IVotes.sol": {
-      "lastModificationDate": 1665453810248,
-      "contentHash": "632454fb0829e515659fb86cc45cd18a",
+      "lastModificationDate": 1666476359578,
+      "contentHash": "dca8c7057e2b0f6e419ddb0d5a7bf9ea",
       "sourceName": "contracts/lib/IVotes.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -776,7 +776,7 @@
       },
       "imports": [],
       "versionPragmas": [
-        "^0.8.0"
+        "^0.8.17"
       ],
       "artifacts": [
         "IVotes"
@@ -893,8 +893,8 @@
       ]
     },
     "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\lib\\TimelockController.sol": {
-      "lastModificationDate": 1665454347422,
-      "contentHash": "cd4d268aeae0e2e24d63dc124b58697b",
+      "lastModificationDate": 1666476403219,
+      "contentHash": "2ef4b7663a1d0ba605a3cb8e40ae9ccc",
       "sourceName": "contracts/lib/TimelockController.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -926,7 +926,7 @@
         "./Address.sol"
       ],
       "versionPragmas": [
-        "^0.8.0"
+        "^0.8.17"
       ],
       "artifacts": [
         "TimelockController"
@@ -1045,8 +1045,8 @@
       ]
     },
     "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\Member.sol": {
-      "lastModificationDate": 1665626899499,
-      "contentHash": "8589ef5011ab5d44065058fad4daa7e3",
+      "lastModificationDate": 1666486302026,
+      "contentHash": "f767f03b1205ad0545b984359e71c2a2",
       "sourceName": "contracts/Member.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -1126,8 +1126,8 @@
       ]
     },
     "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\MemberBoardFactory.sol": {
-      "lastModificationDate": 1665627275679,
-      "contentHash": "434a75d694bf76d4650b6431fb5d4262",
+      "lastModificationDate": 1666484339380,
+      "contentHash": "e8164b4fc489a2ddb3e768189fcec8d2",
       "sourceName": "contracts/MemberBoardFactory.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -1164,8 +1164,8 @@
       ]
     },
     "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\MemberBoard.sol": {
-      "lastModificationDate": 1665627289546,
-      "contentHash": "daf389d59dd2c2f46c6b2049e4b0b893",
+      "lastModificationDate": 1666485166829,
+      "contentHash": "fb08b16a926ee259bfa64d31bcf247bd",
       "sourceName": "contracts/MemberBoard.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -1272,6 +1272,269 @@
       ],
       "artifacts": [
         "NoDelegateCall"
+      ]
+    },
+    "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\lib\\IERC20Permit.sol": {
+      "lastModificationDate": 1666476140322,
+      "contentHash": "c9fd094d2ab0883f24992a91f61a7d8e",
+      "sourceName": "contracts/lib/IERC20Permit.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "IERC20Permit"
+      ]
+    },
+    "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\ZinziCoin.sol": {
+      "lastModificationDate": 1666474694147,
+      "contentHash": "39416c3a50563d71e0104186f358d6ac",
+      "sourceName": "contracts/ZinziCoin.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./lib/IERC20.sol",
+        "./lib/IERC20Metadata.sol",
+        "./lib/Context.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "ERC20"
+      ]
+    },
+    "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\lib\\Counters.sol": {
+      "lastModificationDate": 1666476360733,
+      "contentHash": "557d10edcd9d20e6cb598dffddc0b01b",
+      "sourceName": "contracts/lib/Counters.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "Counters"
+      ]
+    },
+    "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\lib\\IERC20.sol": {
+      "lastModificationDate": 1666474230747,
+      "contentHash": "2ee34e8562f355a0d50948668f5a8bdc",
+      "sourceName": "contracts/lib/IERC20.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "IERC20"
+      ]
+    },
+    "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\lib\\IERC20Metadata.sol": {
+      "lastModificationDate": 1666474689100,
+      "contentHash": "5ceb2b5840f3e5d92ec207b8be61464d",
+      "sourceName": "contracts/lib/IERC20Metadata.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./IERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "IERC20Metadata"
+      ]
+    },
+    "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\ERC20Permits.sol": {
+      "lastModificationDate": 1666480939556,
+      "contentHash": "acb8cb698effd505b7d650958b602490",
+      "sourceName": "contracts/ERC20Permits.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./lib/IERC20Permit.sol",
+        "./ZinziCoin.sol",
+        "./lib/ECDSA.sol",
+        "./lib/EIP712.sol",
+        "./lib/Counters.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "ERC20Permit"
+      ]
+    },
+    "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\ERC20Votes.sol": {
+      "lastModificationDate": 1666480958203,
+      "contentHash": "13deae5dffd10fb2edffd7f20b5e3b27",
+      "sourceName": "contracts/ERC20Votes.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./lib/Math.sol",
+        "./lib/IVotes.sol",
+        "./lib/SafeCast.sol",
+        "./lib/ECDSA.sol",
+        "./ERC20Permits.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "ERC20Votes"
       ]
     }
   }

@@ -15,7 +15,9 @@ contract MemberBoardFactory {
     }
 
     function create(string memory newBoardName) public {
-        address boardAddress = address(new MemberBoard(memberAddress, msg.sender));
+        address boardAddress = address(
+            new MemberBoard(memberAddress, msg.sender)
+        );
         names[boardAddress] = newBoardName;
         boards[boardAddress] = true;
         Member f = Member(memberAddress);

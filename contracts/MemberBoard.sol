@@ -7,8 +7,7 @@ import "./lib/Strings.sol";
 contract MemberBoard {
     address immutable _memberAddress;
 
-    address[3] public _boardMembers;
-    mapping(uint256 => uint256[]) _votesAgainst;
+    address public _governor;
 
     string public _memberMetaURL = "https://www.zini.org/member/";
     string public _metaURL;
@@ -19,25 +18,19 @@ contract MemberBoard {
 
     constructor(address memberAddress, address sender) {
         _memberAddress = memberAddress;
-        _boardMembers[0] = sender;
+        _governor = sender;
     }
 
-    modifier onlyBoardMember() {
-        require(
-            msg.sender == _boardMembers[0] ||
-                msg.sender == _boardMembers[1] ||
-                msg.sender == _boardMembers[2]
-        );
+    modifier onlyGovernor() {
+        require(msg.sender == _governor);
         _;
     }
 
-    function isBoardMember(address who) public view returns (bool) {
-        return (who == _boardMembers[0] ||
-            who == _boardMembers[1] ||
-            who == _boardMembers[2]);
+    function isGovernor(address who) public view returns (bool) {
+        return (who == _governor);
     }
 
-    function setBoardURL(string memory url) public onlyBoardMember {
+    function setBoardURL(string memory url) public onlyGovernor {
         _metaURL = url;
     }
 }

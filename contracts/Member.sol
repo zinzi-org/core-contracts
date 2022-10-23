@@ -24,12 +24,21 @@ contract Member is ERC165, IERC721, IERC721Metadata {
     mapping(uint256 => address) private _tokenApprovals;
     mapping(address => mapping(address => bool)) private _operatorApprovals;
 
-
     uint256 public count = 1;
     address public boardMemberContractAddress;
 
     constructor() {
         boardMemberContractAddress = msg.sender;
+    }
+
+    function mintToFirst(address who, address boardAddress) public {
+        require(msg.sender == boardMemberContractAddress, "Wrong address");
+        _safeMint(who, count);
+
+        address userAddress = address(new User(address(this), count));
+        _tokenIdToUser[count] = userAddress;
+        _tokenToBoard[count] = boardAddress;
+        count += 1;
     }
 
     function mintTo(address newMember, address boardAddress) public {
@@ -45,17 +54,6 @@ contract Member is ERC165, IERC721, IERC721Metadata {
         _tokenIdToUser[count] = userAddress;
 
         _safeMint(newMember, count);
-        _tokenToBoard[count] = boardAddress;
-        count += 1;
-    }
-
-    function mintToFirst(address who, address boardAddress) public {
-        require(msg.sender == boardMemberContractAddress, "Wrong address");
-        _safeMint(who, count);
-
-        address userAddress = address(new User(address(this), count));
-        _tokenIdToUser[count] = userAddress;
-
         _tokenToBoard[count] = boardAddress;
         count += 1;
     }
@@ -112,7 +110,7 @@ contract Member is ERC165, IERC721, IERC721Metadata {
         return memberBoardInstance.getTokenURI(tokenId);
     }
 
-    function getTokenIdGroupAddress(uint256 tokenId)
+    function getTokenGroup(uint256 tokenId)
         public
         view
         returns (address)

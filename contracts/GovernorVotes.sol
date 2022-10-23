@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v4.6.0) (governance/extensions/GovernorVotes.sol)
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.17;
 
 import "./Governor.sol";
 import "./lib/IVotes.sol";

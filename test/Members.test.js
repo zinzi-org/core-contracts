@@ -20,6 +20,10 @@ describe("Base Test Setup", () => {
         var memberAddress = await factory.memberAddress();
         const memberContract = new ethers.Contract(memberAddress, memberCompiled.abi, owner);
 
+
+
+
+
         return { factory, memberContract, owner, otherAccount };
     }
 
@@ -40,7 +44,7 @@ describe("Base Test Setup", () => {
         var uri = await memberContract.tokenURI(balance);
         expect(uri).to.equal("https://www.zini.org/member/1");
 
-        var groupId = await memberContract.getTokenIdGroupAddress(balance);
+        var groupId = await memberContract.getTokenGroup(balance);
 
         const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
         expect(memberBoard.address).to.not.be.null;
@@ -52,12 +56,36 @@ describe("Base Test Setup", () => {
         expect(isBoardMember).to.eq(true);
     });
 
-    it('has member nft', async () => {
+    it('can add member to group', async () => {
+        const { factory, memberContract, owner, otherAccount } = await loadFixture(fixture);
+        await factory.create("Harvard MemberBoard");
+        var balance = await memberContract.balanceOf(owner.address);
+        var groupId = await memberContract.getTokenGroup(balance);
+        const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
+        await memberContract.mintTo(otherAccount.address, groupId);
+        var obalance = await memberContract.balanceOf(otherAccount.address);
+        expect(obalance).to.equal(1);
+    });
 
+    it('can add member to group', async () => {
+        const { factory, memberContract, owner, otherAccount } = await loadFixture(fixture);
+        await factory.create("Harvard MemberBoard");
+        var balance = await memberContract.balanceOf(owner.address);
+        var groupId = await memberContract.getTokenGroup(balance);
+        const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
+        await memberContract.mintTo(otherAccount.address, groupId);
+        var obalance = await memberContract.balanceOf(otherAccount.address);
+        expect(obalance).to.equal(1);
+    });
+
+    it('board can create proposal', async () => {
+        const { factory, memberContract, owner, otherAccount } = await loadFixture(fixture);
+        await factory.create("Harvard MemberBoard");
+        var balance = await memberContract.balanceOf(owner.address);
+        var groupId = await memberContract.getTokenGroup(balance);
+        const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
+        await memberContract.mintTo(otherAccount.address, groupId);
     });
 
 
-    it('can create member board', async () => {
-
-    });
 });

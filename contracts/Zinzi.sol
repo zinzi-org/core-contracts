@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.17;
 
 import "./Governor.sol";
 import "./GovernorSettings.sol";
@@ -13,9 +13,12 @@ contract Zinzi is Governor, GovernorSettings, GovernorCountingSimple, GovernorVo
         Governor("Zinzi")
         GovernorSettings(1 /* 1 block */, 50400 /* 1 week */, 6e18)
         GovernorVotes(_token)
-        GovernorVotesQuorumFraction(4)
+        GovernorVotesQuorumFraction(50)
         GovernorTimelockControl(_timelock)
-    {}
+    {
+
+        
+    }
 
     // The following functions are overrides required by Solidity.
 
