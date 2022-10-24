@@ -458,6 +458,7 @@ $RECYCLE.BIN/
 # Allow a dummy project in this directory for testing purposes
 myproject
 
+/cache
 /node_modules
 /.idea
 *.tsbuildinfo

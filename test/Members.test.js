@@ -20,6 +20,12 @@ describe("Base Test Setup", () => {
         var memberAddress = await factory.memberAddress();
         const memberContract = new ethers.Contract(memberAddress, memberCompiled.abi, owner);
 
+        const ZinziCoin = await ethers.getContractFactory("ZinziCoin");
+        const zinziCoinInstance = await ZinziCoin.deploy("Zinzi", "ZZ");
+
+        const Zinzi = await ethers.getContractFactory("Zinzi");
+        const zinziInstance = await Zinzi.deploy();
+
 
 
 

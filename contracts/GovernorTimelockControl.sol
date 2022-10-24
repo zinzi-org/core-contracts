@@ -5,7 +5,7 @@ pragma solidity ^0.8.17;
 
 import "./lib/IGovernorTimelock.sol";
 import "./Governor.sol";
-import "./lib/TimelockController.sol";
+import "./TimelockController.sol";
 
 /**
  * @dev Extension of {Governor} that binds the execution process to an instance of {TimelockController}. This adds a

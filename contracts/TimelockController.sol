@@ -3,10 +3,14 @@
 
 pragma solidity ^0.8.17;
 
-import "./AccessControl.sol";
-import "./IERC721Receiver.sol";
-import "./IERC1155Receiver.sol";
-import "./Address.sol";
+import "./lib/AccessControl.sol";
+import "./lib/IERC721Receiver.sol";
+import "./lib/IERC1155Receiver.sol";
+import "./lib/Address.sol";
+import "./lib/Math.sol";
+import "./lib/IVotes.sol";
+import "./lib/SafeCast.sol";
+import "./lib/ECDSA.sol";
 
 /**
  * @dev Contract module which acts as a timelocked controller. When set as the

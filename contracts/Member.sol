@@ -47,8 +47,8 @@ contract Member is ERC165, IERC721, IERC721Metadata {
         require(isBoard, "Not a valid board address");
 
         MemberBoard b = MemberBoard(boardAddress);
-        bool senderIsBoardMember = b.isBoardMember(msg.sender);
-        require(senderIsBoardMember, "Must be a board member");
+        bool isGov = b.isGovernor(msg.sender);
+        require(isGov, "Must be a board member");
 
         address userAddress = address(new User(address(this), count));
         _tokenIdToUser[count] = userAddress;

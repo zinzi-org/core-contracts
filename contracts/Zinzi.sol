@@ -8,17 +8,25 @@ import "./GovernorVotes.sol";
 import "./GovernorVotesQuorumFraction.sol";
 import "./GovernorTimelockControl.sol";
 
-contract Zinzi is Governor, GovernorSettings, GovernorCountingSimple, GovernorVotes, GovernorVotesQuorumFraction, GovernorTimelockControl {
+contract Zinzi is
+    Governor,
+    GovernorSettings,
+    GovernorCountingSimple,
+    GovernorVotes,
+    GovernorVotesQuorumFraction,
+    GovernorTimelockControl
+{
     constructor(IVotes _token, TimelockController _timelock)
         Governor("Zinzi")
-        GovernorSettings(1 /* 1 block */, 50400 /* 1 week */, 6e18)
+        GovernorSettings(
+            1, /* 1 block */
+            50400, /* 1 week */
+            6e18
+        )
         GovernorVotes(_token)
         GovernorVotesQuorumFraction(50)
         GovernorTimelockControl(_timelock)
-    {
-
-        
-    }
+    {}
 
     // The following functions are overrides required by Solidity.
 
@@ -58,11 +66,12 @@ contract Zinzi is Governor, GovernorSettings, GovernorCountingSimple, GovernorVo
         return super.state(proposalId);
     }
 
-    function propose(address[] memory targets, uint256[] memory values, bytes[] memory calldatas, string memory description)
-        public
-        override(Governor, IGovernor)
-        returns (uint256)
-    {
+    function propose(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        string memory description
+    ) public override(Governor, IGovernor) returns (uint256) {
         return super.propose(targets, values, calldatas, description);
     }
 
@@ -75,18 +84,22 @@ contract Zinzi is Governor, GovernorSettings, GovernorCountingSimple, GovernorVo
         return super.proposalThreshold();
     }
 
-    function _execute(uint256 proposalId, address[] memory targets, uint256[] memory values, bytes[] memory calldatas, bytes32 descriptionHash)
-        internal
-        override(Governor, GovernorTimelockControl)
-    {
+    function _execute(
+        uint256 proposalId,
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) internal override(Governor, GovernorTimelockControl) {
         super._execute(proposalId, targets, values, calldatas, descriptionHash);
     }
 
-    function _cancel(address[] memory targets, uint256[] memory values, bytes[] memory calldatas, bytes32 descriptionHash)
-        internal
-        override(Governor, GovernorTimelockControl)
-        returns (uint256)
-    {
+    function _cancel(
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas,
+        bytes32 descriptionHash
+    ) internal override(Governor, GovernorTimelockControl) returns (uint256) {
         return super._cancel(targets, values, calldatas, descriptionHash);
     }
 
