@@ -20,17 +20,16 @@ describe("Base Test Setup", () => {
         var memberAddress = await factory.memberAddress();
         const memberContract = new ethers.Contract(memberAddress, memberCompiled.abi, owner);
 
-        const ZinziCoin = await ethers.getContractFactory("ZinziCoin");
-        const zinziCoinInstance = await ZinziCoin.deploy("Zinzi", "ZZ");
+        const timeLockFact = await ethers.getContractFactory("TimelockController");
+        const timeLock = await timeLockFact.deploy(10, [owner.address], [otherAccount.address], owner.address);
 
-        const Zinzi = await ethers.getContractFactory("Zinzi");
-        const zinziInstance = await Zinzi.deploy();
+        const zinziCoinFact = await ethers.getContractFactory("ZinziCoin");
+        const zinziCoin = await zinziCoinFact.deploy("Zinzi", "ZZ");
 
+        const ZinziFact = await ethers.getContractFactory("Zinzi");
+        const zinziGovernance = await ZinziFact.deploy(zinziCoinInstance.address, timeLockInstance.address);
 
-
-
-
-        return { factory, memberContract, owner, otherAccount };
+        return { factory, memberContract, owner, otherAccount, timeLock, zinziCoin, zinziGovernance };
     }
 
     it('has board member factory with member board', async () => {
@@ -58,7 +57,7 @@ describe("Base Test Setup", () => {
         var metaURL = await memberBoard._memberMetaURL();
         expect(metaURL).to.equal("https://www.zini.org/member/");
 
-        var isBoardMember = await memberBoard.isBoardMember(owner.address);
+        var isBoardMember = await memberBoard.isGovernor(owner.address);
         expect(isBoardMember).to.eq(true);
     });
 
