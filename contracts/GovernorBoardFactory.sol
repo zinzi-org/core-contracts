@@ -1,26 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "./MemberBoard.sol";
-import "./Member.sol";
+import "./GovernorBoard.sol";
+import "./Members.sol";
+import "./MemberVote.sol";
 
-contract MemberBoardFactory {
+contract GovernorBoardFactory {
     event BoardCreated(address);
     mapping(address => string) public names;
     mapping(address => bool) public boards;
-    address public memberAddress;
+    address public membersAddress;
 
     constructor() {
-        memberAddress = address(new Member());
+        membersAddress = address(new Members());
     }
 
     function create(string memory newBoardName) public {
         address boardAddress = address(
-            new MemberBoard(memberAddress, msg.sender)
+            new GovernorBoard(membersAddress, msg.sender)
         );
         names[boardAddress] = newBoardName;
         boards[boardAddress] = true;
-        Member f = Member(memberAddress);
+        Members f = Members(membersAddress);
         f.mintToFirst(msg.sender, boardAddress);
         emit BoardCreated(boardAddress);
     }

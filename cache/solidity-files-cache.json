@@ -725,50 +725,6 @@
         "IERC721"
       ]
     },
-    "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\Member.sol": {
-      "lastModificationDate": 1666574322745,
-      "contentHash": "fc7f74b0bb0a7ce28e6c86c834918b05",
-      "sourceName": "contracts/Member.sol",
-      "solcConfig": {
-        "version": "0.8.17",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 1000
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "./lib/IERC721.sol",
-        "./lib/IERC721Receiver.sol",
-        "./lib/IERC721Metadata.sol",
-        "./MemberBoardFactory.sol",
-        "./MemberBoard.sol",
-        "./lib/Strings.sol",
-        "./lib/ERC165.sol",
-        "./User.sol"
-      ],
-      "versionPragmas": [
-        "^0.8.17"
-      ],
-      "artifacts": [
-        "Member"
-      ]
-    },
     "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\lib\\IERC721Metadata.sol": {
       "lastModificationDate": 1664492571455,
       "contentHash": "3262d22e159a5d65228bf36f274e8382",
@@ -806,85 +762,9 @@
         "IERC721Metadata"
       ]
     },
-    "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\MemberBoardFactory.sol": {
-      "lastModificationDate": 1666486737186,
-      "contentHash": "e8164b4fc489a2ddb3e768189fcec8d2",
-      "sourceName": "contracts/MemberBoardFactory.sol",
-      "solcConfig": {
-        "version": "0.8.17",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 1000
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "./MemberBoard.sol",
-        "./Member.sol"
-      ],
-      "versionPragmas": [
-        "^0.8.17"
-      ],
-      "artifacts": [
-        "MemberBoardFactory"
-      ]
-    },
-    "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\MemberBoard.sol": {
-      "lastModificationDate": 1666489469396,
-      "contentHash": "d27c9ffe9bf18fcf7f78a509c40e8fad",
-      "sourceName": "contracts/MemberBoard.sol",
-      "solcConfig": {
-        "version": "0.8.17",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 1000
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [
-        "./Member.sol",
-        "./lib/Strings.sol"
-      ],
-      "versionPragmas": [
-        "^0.8.17"
-      ],
-      "artifacts": [
-        "MemberBoard"
-      ]
-    },
     "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\User.sol": {
-      "lastModificationDate": 1665361823925,
-      "contentHash": "d8c85af6e0e7a9605eaf4f8ebf6989f5",
+      "lastModificationDate": 1666754083577,
+      "contentHash": "4452e43a98f54d14e1b1dc07e0217cf8",
       "sourceName": "contracts/User.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -911,7 +791,7 @@
       },
       "imports": [
         "./lib/Strings.sol",
-        "./Member.sol"
+        "./Members.sol"
       ],
       "versionPragmas": [
         "^0.8.17"
@@ -1095,6 +975,173 @@
       ],
       "artifacts": [
         "IERC20Metadata"
+      ]
+    },
+    "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\GovernorBoard.sol": {
+      "lastModificationDate": 1666754294516,
+      "contentHash": "ee9cb771279c4c452aabb6a5735e6503",
+      "sourceName": "contracts/GovernorBoard.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./Members.sol",
+        "./lib/Strings.sol",
+        "./MemberVote.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "GovernorBoard"
+      ]
+    },
+    "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\Members.sol": {
+      "lastModificationDate": 1666754160327,
+      "contentHash": "a9aa2dce5eb7667bf46ab1137f6b6c1d",
+      "sourceName": "contracts/Members.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./lib/IERC721.sol",
+        "./lib/IERC721Receiver.sol",
+        "./lib/IERC721Metadata.sol",
+        "./GovernorBoardFactory.sol",
+        "./GovernorBoard.sol",
+        "./lib/Strings.sol",
+        "./lib/ERC165.sol",
+        "./User.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "Members"
+      ]
+    },
+    "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\MemberVote.sol": {
+      "lastModificationDate": 1666754269677,
+      "contentHash": "045ce7d88a05d18c867d32750c3cf195",
+      "sourceName": "contracts/MemberVote.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./lib/IERC20.sol",
+        "./lib/IERC20Metadata.sol",
+        "./lib/Context.sol",
+        "./lib/IVotes.sol",
+        "./lib/SafeCast.sol",
+        "./lib/Counters.sol",
+        "./lib/Math.sol",
+        "./lib/ECDSA.sol",
+        "./lib/EIP712.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "MemberVote"
+      ]
+    },
+    "C:\\Users\\kstem\\source\\decamp\\contracts-core\\contracts\\GovernorBoardFactory.sol": {
+      "lastModificationDate": 1666754073079,
+      "contentHash": "a1a81d042a9e9e6aa230238a23a08ad9",
+      "sourceName": "contracts/GovernorBoardFactory.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./GovernorBoard.sol",
+        "./Members.sol",
+        "./MemberVote.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.17"
+      ],
+      "artifacts": [
+        "GovernorBoardFactory"
       ]
     }
   }

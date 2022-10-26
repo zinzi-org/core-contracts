@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "./Member.sol";
+import "./Members.sol";
 import "./lib/Strings.sol";
+import "./MemberVote.sol";
 
-contract MemberBoard {
+contract GovernorBoard {
     address immutable _memberAddress;
 
-    address public _governor;
+    address[] public _governors;
+    mapping(address => uint) public _governorsMapping;
 
     string public _memberMetaURL = "https://www.zini.org/member/";
     string public _metaURL;
+
+    address public memberVotes;
 
     function getTokenURI(uint256 tokenId) public view returns (string memory) {
         return string.concat(_memberMetaURL, Strings.toString(tokenId));
@@ -18,19 +22,26 @@ contract MemberBoard {
 
     constructor(address memberAddress, address sender) {
         _memberAddress = memberAddress;
-        _governor = sender;
+        _governors.push(sender);
+        _governorsMapping[sender] = _governors.length;
+
+        memberVotes = address(new MemberVote("ZinziDAO", "ZZ", address(this)));
     }
 
     modifier onlyGovernor() {
-        require(msg.sender == _governor);
+        require(_governorsMapping[msg.sender] > 0);
         _;
     }
 
     function isGovernor(address who) public view returns (bool) {
-        return (who == _governor);
+        return (_governorsMapping[who] > 0);
     }
 
     function setBoardURL(string memory url) public onlyGovernor {
         _metaURL = url;
     }
+
+    function voteToAddGovernor() public {}
+
+    function voteToRemoveGovernor() public {}
 }

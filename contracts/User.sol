@@ -2,7 +2,7 @@
 pragma solidity ^0.8.17;
 
 import "./lib/Strings.sol";
-import "./Member.sol";
+import "./Members.sol";
 
 contract User {
     address immutable _memberAddress;
@@ -19,7 +19,7 @@ contract User {
     }
 
     modifier onlyOwner() {
-        Member mem = Member(_memberAddress);
+        Members mem = Members(_memberAddress);
         require(msg.sender == mem.ownerOf(_tokenId), "Not the owner");
         _;
     }

@@ -5,13 +5,13 @@ pragma solidity ^0.8.17;
 import "./lib/IERC721.sol";
 import "./lib/IERC721Receiver.sol";
 import "./lib/IERC721Metadata.sol";
-import "./MemberBoardFactory.sol";
-import "./MemberBoard.sol";
+import "./GovernorBoardFactory.sol";
+import "./GovernorBoard.sol";
 import "./lib/Strings.sol";
 import "./lib/ERC165.sol";
 import "./User.sol";
 
-contract Member is ERC165, IERC721, IERC721Metadata {
+contract Members is ERC165, IERC721, IERC721Metadata {
     using Strings for uint256;
 
     string public name = "Member";
@@ -25,14 +25,14 @@ contract Member is ERC165, IERC721, IERC721Metadata {
     mapping(address => mapping(address => bool)) private _operatorApprovals;
 
     uint256 public count = 1;
-    address public boardMemberContractAddress;
+    address public boardFactoryAddress;
 
     constructor() {
-        boardMemberContractAddress = msg.sender;
+        boardFactoryAddress = msg.sender;
     }
 
     function mintToFirst(address who, address boardAddress) public {
-        require(msg.sender == boardMemberContractAddress, "Wrong address");
+        require(msg.sender == boardFactoryAddress, "Wrong address");
         _safeMint(who, count);
 
         address userAddress = address(new User(address(this), count));
@@ -42,11 +42,11 @@ contract Member is ERC165, IERC721, IERC721Metadata {
     }
 
     function mintTo(address newMember, address boardAddress) public {
-        MemberBoardFactory x = MemberBoardFactory(boardMemberContractAddress);
+        GovernorBoardFactory x = GovernorBoardFactory(boardFactoryAddress);
         bool isBoard = x.isBoard(boardAddress);
         require(isBoard, "Not a valid board address");
 
-        MemberBoard b = MemberBoard(boardAddress);
+        GovernorBoard b = GovernorBoard(boardAddress);
         bool isGov = b.isGovernor(msg.sender);
         require(isGov, "Must be a board member");
 
@@ -106,20 +106,16 @@ contract Member is ERC165, IERC721, IERC721Metadata {
     {
         _requireMinted(tokenId);
         address memberBoardAddress = _tokenToBoard[tokenId];
-        MemberBoard memberBoardInstance = MemberBoard(memberBoardAddress);
+        GovernorBoard memberBoardInstance = GovernorBoard(memberBoardAddress);
         return memberBoardInstance.getTokenURI(tokenId);
     }
 
-    function getTokenGroup(uint256 tokenId)
-        public
-        view
-        returns (address)
-    {
+    function getTokenGroup(uint256 tokenId) public view returns (address) {
         return _tokenToBoard[tokenId];
     }
 
     function approve(address to, uint256 tokenId) public virtual override {
-        address tokeOwner = Member.ownerOf(tokenId);
+        address tokeOwner = Members.ownerOf(tokenId);
         require(to != tokeOwner, "ERC721: approval to current owner");
 
         require(
@@ -220,7 +216,7 @@ contract Member is ERC165, IERC721, IERC721Metadata {
         virtual
         returns (bool)
     {
-        address tokeOwner = Member.ownerOf(tokenId);
+        address tokeOwner = Members.ownerOf(tokenId);
         return (spender == tokeOwner ||
             isApprovedForAll(tokeOwner, spender) ||
             getApproved(tokenId) == spender);
@@ -256,7 +252,7 @@ contract Member is ERC165, IERC721, IERC721Metadata {
         uint256 tokenId
     ) internal virtual {
         require(
-            Member.ownerOf(tokenId) == from,
+            Members.ownerOf(tokenId) == from,
             "ERC721: transfer from incorrect owner"
         );
         require(to != address(0), "ERC721: transfer to the zero address");
@@ -273,7 +269,7 @@ contract Member is ERC165, IERC721, IERC721Metadata {
 
     function _approve(address to, uint256 tokenId) internal virtual {
         _tokenApprovals[tokenId] = to;
-        emit Approval(Member.ownerOf(tokenId), to, tokenId);
+        emit Approval(Members.ownerOf(tokenId), to, tokenId);
     }
 
     function _setApprovalForAll(
