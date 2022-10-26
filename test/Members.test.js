@@ -14,22 +14,11 @@ describe("Base Test Setup", () => {
 
     async function fixture() {
         const [owner, otherAccount] = await ethers.getSigners();
-
         const BoardFactory = await ethers.getContractFactory("MemberBoardFactory");
         const factory = await BoardFactory.deploy();
         var memberAddress = await factory.memberAddress();
         const memberContract = new ethers.Contract(memberAddress, memberCompiled.abi, owner);
-
-        const timeLockFact = await ethers.getContractFactory("TimelockController");
-        const timeLock = await timeLockFact.deploy(10, [owner.address], [otherAccount.address], owner.address);
-
-        const zinziCoinFact = await ethers.getContractFactory("ZinziCoin");
-        const zinziCoin = await zinziCoinFact.deploy("Zinzi", "ZZ");
-
-        const ZinziFact = await ethers.getContractFactory("Zinzi");
-        const zinziGovernance = await ZinziFact.deploy(zinziCoinInstance.address, timeLockInstance.address);
-
-        return { factory, memberContract, owner, otherAccount, timeLock, zinziCoin, zinziGovernance };
+        return { factory, memberContract, owner, otherAccount };
     }
 
     it('has board member factory with member board', async () => {
@@ -83,7 +72,7 @@ describe("Base Test Setup", () => {
         expect(obalance).to.equal(1);
     });
 
-    it('board can create proposal', async () => {
+    it('governor can create proposal', async () => {
         const { factory, memberContract, owner, otherAccount } = await loadFixture(fixture);
         await factory.create("Harvard MemberBoard");
         var balance = await memberContract.balanceOf(owner.address);
