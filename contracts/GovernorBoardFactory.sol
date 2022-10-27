@@ -15,9 +15,9 @@ contract GovernorBoardFactory {
         _membersAddress = address(new Members());
     }
 
-    function create() public {
+    function create(string memory name, string memory symbol) public {
         address boardAddress = address(
-            new GovernorBoard(_membersAddress, msg.sender)
+            new GovernorBoard(_membersAddress, msg.sender, name, symbol)
         );
         _boards[boardAddress] = true;
         Members f = Members(_membersAddress);

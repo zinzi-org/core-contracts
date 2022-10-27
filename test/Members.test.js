@@ -8,7 +8,7 @@ const { ethers } = require("hardhat");
 
 const memberCompiled = require("../artifacts/contracts/Members.sol/Members.json");
 const memberBoardCompiled = require("../artifacts/contracts/GovernorBoard.sol/GovernorBoard.json");
-
+const memberVotesCompiled = require("../artifacts/contracts/MemberVote.sol/MemberVote.json");
 
 describe("Base Test Setup", () => {
 
@@ -18,8 +18,9 @@ describe("Base Test Setup", () => {
         const factory = await BoardFactory.deploy();
         var memberAddress = await factory.membersAddress();
         const memberContract = new ethers.Contract(memberAddress, memberCompiled.abi, owner);
-        const memVotesFact = await ethers.getContractFactory("MemberVote");
-        const memberVotes = await memVotesFact.deploy("ZiniDAO", "ZZ", factory.address);
+        const memberVotesAddress = memberContract.get
+        const memberVotes = new ethers.Contract(memberVotesAddress, memberVotesCompiled.abi, owner);
+
         return { factory, memberContract, owner, otherAccount, memberVotes };
     }
 

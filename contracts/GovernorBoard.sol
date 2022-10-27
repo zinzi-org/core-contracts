@@ -1,17 +1,34 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "./Members.sol";
 import "./lib/Strings.sol";
+import "./lib/Timers.sol";
+
+import "./Members.sol";
 import "./MemberVote.sol";
 
 contract GovernorBoard {
+    using Timers for Timers.BlockNumber;
+
     address immutable _memberAddress;
 
     enum PropType {
+        TEXT_BASED_PROPOSAL,
         ADD_GOVERNOR,
-        REMOVE_GOVERNOR
+        REMOVE_GOVERNOR,
+        SET_BOARD_URL,
+        REMOVE_MEMBER,
+        REBUKE_MEMBER
     }
+
+    struct ProposalCore {
+        Timers.BlockNumber voteStart;
+        Timers.BlockNumber voteEnd;
+        bool executed;
+        bool canceled;
+    }
+
+    mapping(uint256 => ProposalCore) private _proposals;
 
     address[] public _governors;
     mapping(address => uint) public _governorsMapping;
@@ -19,7 +36,7 @@ contract GovernorBoard {
     string public _memberMetaURL = "https://www.zini.org/member/";
     string public _metaURL;
 
-    address public _memberVotesAddress;
+    address immutable _memberVotesAddress;
 
     uint256 public _proposalThreshold = 10;
 
@@ -27,13 +44,18 @@ contract GovernorBoard {
         return string.concat(_memberMetaURL, Strings.toString(tokenId));
     }
 
-    constructor(address memberAddress, address sender) {
+    constructor(
+        address memberAddress,
+        address sender,
+        string memory tokenName,
+        string memory tokenSymbol
+    ) {
         _memberAddress = memberAddress;
         _governors.push(sender);
         _governorsMapping[sender] = _governors.length;
 
         _memberVotesAddress = address(
-            new MemberVote("ZinziDAO", "ZZ", address(this))
+            new MemberVote(tokenName, tokenSymbol, address(this))
         );
 
         MemberVote memberVote = MemberVote(_memberVotesAddress);
@@ -54,14 +76,34 @@ contract GovernorBoard {
         _metaURL = url;
     }
 
-    function initVote(PropType pType, string memory description) public {
-        MemberVote memberVote = MemberVote(_memberVotesAddress);
-        require(memberVote.balanceOf(msg.sender) >= _proposalThreshold);
+    function getMemberVotesAddress() public view returns (address) {
+        return _memberVotesAddress;
     }
 
-    function initVoteWithDelegates(
+    //This function can be called by anyone with enough votes to meet the threshold
+    function initProposal(
         PropType pType,
+        address who,
         address[] memory delegates,
         string memory description
-    ) public {}
+    ) public {
+        MemberVote memberVote = MemberVote(_memberVotesAddress);
+        if (isGovernor(msg.sender)) {
+            require(memberVote.balanceOf(msg.sender) >= _proposalThreshold);
+        } else {
+            require(getDelegatedVotes(delegates) >= _proposalThreshold);
+        }
+
+        if (pType == PropType.ADD_GOVERNOR) {}
+
+        if (pType == PropType.REMOVE_GOVERNOR) {}
+    }
+
+    function getDelegatedVotes(address[] memory delegates)
+        public
+        pure
+        returns (uint)
+    {
+        return 10;
+    }
 }
