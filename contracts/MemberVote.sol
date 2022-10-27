@@ -71,6 +71,11 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         _boardAddress = boardAddress;
     }
 
+    function voteMinterForBoard(address who, uint256 amount) public {
+        require(msg.sender == _boardAddress);
+        _mint(who, amount);
+    }
+
     function name() public view virtual override returns (string memory) {
         return _name;
     }

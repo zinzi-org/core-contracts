@@ -7,26 +7,29 @@ import "./MemberVote.sol";
 
 contract GovernorBoardFactory {
     event BoardCreated(address);
-    mapping(address => string) public names;
-    mapping(address => bool) public boards;
-    address public membersAddress;
+
+    mapping(address => bool) public _boards;
+    address immutable _membersAddress;
 
     constructor() {
-        membersAddress = address(new Members());
+        _membersAddress = address(new Members());
     }
 
-    function create(string memory newBoardName) public {
+    function create() public {
         address boardAddress = address(
-            new GovernorBoard(membersAddress, msg.sender)
+            new GovernorBoard(_membersAddress, msg.sender)
         );
-        names[boardAddress] = newBoardName;
-        boards[boardAddress] = true;
-        Members f = Members(membersAddress);
+        _boards[boardAddress] = true;
+        Members f = Members(_membersAddress);
         f.mintToFirst(msg.sender, boardAddress);
         emit BoardCreated(boardAddress);
     }
 
     function isBoard(address whom) public view returns (bool) {
-        return boards[whom];
+        return _boards[whom];
+    }
+
+    function membersAddress() public view returns (address) {
+        return _membersAddress;
     }
 }

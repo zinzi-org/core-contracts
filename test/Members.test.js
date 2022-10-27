@@ -6,19 +6,21 @@ const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-const memberCompiled = require("../artifacts/contracts/Member.sol/Member.json");
-const memberBoardCompiled = require("../artifacts/contracts/MemberBoard.sol/MemberBoard.json");
+const memberCompiled = require("../artifacts/contracts/Members.sol/Members.json");
+const memberBoardCompiled = require("../artifacts/contracts/GovernorBoard.sol/GovernorBoard.json");
 
 
 describe("Base Test Setup", () => {
 
     async function fixture() {
         const [owner, otherAccount] = await ethers.getSigners();
-        const BoardFactory = await ethers.getContractFactory("MemberBoardFactory");
+        const BoardFactory = await ethers.getContractFactory("GovernorBoardFactory");
         const factory = await BoardFactory.deploy();
-        var memberAddress = await factory.memberAddress();
+        var memberAddress = await factory.membersAddress();
         const memberContract = new ethers.Contract(memberAddress, memberCompiled.abi, owner);
-        return { factory, memberContract, owner, otherAccount };
+        const memVotesFact = await ethers.getContractFactory("MemberVote");
+        const memberVotes = await memVotesFact.deploy("ZiniDAO", "ZZ", factory.address);
+        return { factory, memberContract, owner, otherAccount, memberVotes };
     }
 
     it('has board member factory with member board', async () => {
@@ -27,7 +29,7 @@ describe("Base Test Setup", () => {
         var symbol = await memberContract.symbol();
         expect(symbol).to.equal("MM");
 
-        expect(await factory.create("Harvard MemberBoard")).to.emit(factory, "BoardCreated").withArgs(anyValue);
+        expect(await factory.create()).to.emit(factory, "BoardCreated").withArgs(anyValue);
 
         var balance = await memberContract.balanceOf(owner.address);
         expect(balance).to.equal(1);
@@ -52,7 +54,7 @@ describe("Base Test Setup", () => {
 
     it('can add member to group', async () => {
         const { factory, memberContract, owner, otherAccount } = await loadFixture(fixture);
-        await factory.create("Harvard MemberBoard");
+        await factory.create();
         var balance = await memberContract.balanceOf(owner.address);
         var groupId = await memberContract.getTokenGroup(balance);
         const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
@@ -63,7 +65,7 @@ describe("Base Test Setup", () => {
 
     it('can add member to group', async () => {
         const { factory, memberContract, owner, otherAccount } = await loadFixture(fixture);
-        await factory.create("Harvard MemberBoard");
+        await factory.create();
         var balance = await memberContract.balanceOf(owner.address);
         var groupId = await memberContract.getTokenGroup(balance);
         const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
@@ -74,7 +76,7 @@ describe("Base Test Setup", () => {
 
     it('governor can create proposal', async () => {
         const { factory, memberContract, owner, otherAccount } = await loadFixture(fixture);
-        await factory.create("Harvard MemberBoard");
+        await factory.create();
         var balance = await memberContract.balanceOf(owner.address);
         var groupId = await memberContract.getTokenGroup(balance);
         const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);

@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import "./lib/Strings.sol";
 import "./Members.sol";
 
-contract User {
+contract Member {
     address immutable _memberAddress;
     string public _publicName;
     string public _publicEmail;

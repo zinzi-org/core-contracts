@@ -9,7 +9,7 @@ import "./GovernorBoardFactory.sol";
 import "./GovernorBoard.sol";
 import "./lib/Strings.sol";
 import "./lib/ERC165.sol";
-import "./User.sol";
+import "./Member.sol";
 
 contract Members is ERC165, IERC721, IERC721Metadata {
     using Strings for uint256;
@@ -35,7 +35,7 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         require(msg.sender == boardFactoryAddress, "Wrong address");
         _safeMint(who, count);
 
-        address userAddress = address(new User(address(this), count));
+        address userAddress = address(new Member(address(this), count));
         _tokenIdToUser[count] = userAddress;
         _tokenToBoard[count] = boardAddress;
         count += 1;
@@ -50,7 +50,7 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         bool isGov = b.isGovernor(msg.sender);
         require(isGov, "Must be a board member");
 
-        address userAddress = address(new User(address(this), count));
+        address userAddress = address(new Member(address(this), count));
         _tokenIdToUser[count] = userAddress;
 
         _safeMint(newMember, count);
