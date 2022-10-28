@@ -3,7 +3,6 @@
 
 pragma solidity ^0.8.17;
 
-import "./lib/IERC20.sol";
 import "./lib/IERC20Metadata.sol";
 import "./lib/Context.sol";
 import "./lib/IVotes.sol";
@@ -13,7 +12,7 @@ import "./lib/Math.sol";
 import "./lib/ECDSA.sol";
 import "./lib/EIP712.sol";
 
-contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
+contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
     mapping(address => uint256) private _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;
@@ -76,38 +75,27 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         _mint(who, amount);
     }
 
-    function name() public view virtual override returns (string memory) {
+    function name() public view returns (string memory) {
         return _name;
     }
 
-    function symbol() public view virtual override returns (string memory) {
+    function symbol() public view returns (string memory) {
         return _symbol;
     }
 
-    function decimals() public view virtual override returns (uint8) {
+    function decimals() public pure returns (uint8) {
         return 18;
     }
 
-    function totalSupply() public view virtual override returns (uint256) {
+    function totalSupply() public view  returns (uint256) {
         return _totalSupply;
     }
 
-    function balanceOf(address account)
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
+    function balanceOf(address account) public view returns (uint256) {
         return _balances[account];
     }
 
-    function transfer(address to, uint256 amount)
-        public
-        virtual
-        override
-        returns (bool)
-    {
+    function transfer(address to, uint256 amount) public returns (bool) {
         address owner = _msgSender();
         _transfer(owner, to, amount);
         return true;
@@ -119,8 +107,6 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
     function allowance(address owner, address spender)
         public
         view
-        virtual
-        override
         returns (uint256)
     {
         return _allowances[owner][spender];
@@ -136,12 +122,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
      *
      * - `spender` cannot be the zero address.
      */
-    function approve(address spender, uint256 amount)
-        public
-        virtual
-        override
-        returns (bool)
-    {
+    function approve(address spender, uint256 amount) public returns (bool) {
         address owner = _msgSender();
         _approve(owner, spender, amount);
         return true;
@@ -167,7 +148,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         address from,
         address to,
         uint256 amount
-    ) public virtual override returns (bool) {
+    ) public returns (bool) {
         address spender = _msgSender();
         _spendAllowance(from, spender, amount);
         _transfer(from, to, amount);
@@ -188,7 +169,6 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
      */
     function increaseAllowance(address spender, uint256 addedValue)
         public
-        virtual
         returns (bool)
     {
         address owner = _msgSender();
@@ -212,7 +192,6 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
      */
     function decreaseAllowance(address spender, uint256 subtractedValue)
         public
-        virtual
         returns (bool)
     {
         address owner = _msgSender();
@@ -246,7 +225,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         address from,
         address to,
         uint256 amount
-    ) internal virtual {
+    ) internal {
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
 
@@ -278,7 +257,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
      *
      * - `account` cannot be the zero address.
      */
-    function _mint(address account, uint256 amount) internal virtual {
+    function _mint(address account, uint256 amount) internal {
         require(account != address(0), "ERC20: mint to the zero address");
 
         _beforeTokenTransfer(address(0), account, amount);
@@ -311,7 +290,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
      * - `account` cannot be the zero address.
      * - `account` must have at least `amount` tokens.
      */
-    function _burn(address account, uint256 amount) internal virtual {
+    function _burn(address account, uint256 amount) internal {
         require(account != address(0), "ERC20: burn from the zero address");
 
         _beforeTokenTransfer(account, address(0), amount);
@@ -348,7 +327,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         address owner,
         address spender,
         uint256 amount
-    ) internal virtual {
+    ) internal {
         require(owner != address(0), "ERC20: approve from the zero address");
         require(spender != address(0), "ERC20: approve to the zero address");
 
@@ -368,7 +347,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         address owner,
         address spender,
         uint256 amount
-    ) internal virtual {
+    ) internal {
         uint256 currentAllowance = allowance(owner, spender);
         if (currentAllowance != type(uint256).max) {
             require(
@@ -399,7 +378,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         address from,
         address to,
         uint256 amount
-    ) internal virtual {}
+    ) internal {}
 
     /**
      * @dev Get the `pos`-th checkpoint for `account`.
@@ -407,7 +386,6 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
     function checkpoints(address account, uint32 pos)
         public
         view
-        virtual
         returns (Checkpoint memory)
     {
         return _checkpoints[account][pos];
@@ -416,38 +394,21 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
     /**
      * @dev Get number of checkpoints for `account`.
      */
-    function numCheckpoints(address account)
-        public
-        view
-        virtual
-        returns (uint32)
-    {
+    function numCheckpoints(address account) public view returns (uint32) {
         return SafeCast.toUint32(_checkpoints[account].length);
     }
 
     /**
      * @dev Get the address `account` is currently delegating to.
      */
-    function delegates(address account)
-        public
-        view
-        virtual
-        override
-        returns (address)
-    {
+    function delegates(address account) public view returns (address) {
         return _delegates[account];
     }
 
     /**
      * @dev Gets the current votes balance for `account`
      */
-    function getVotes(address account)
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
+    function getVotes(address account) public view returns (uint256) {
         uint256 pos = _checkpoints[account].length;
         return pos == 0 ? 0 : _checkpoints[account][pos - 1].votes;
     }
@@ -462,7 +423,6 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
     function getPastVotes(address account, uint256 blockNumber)
         public
         view
-        virtual
         override
         returns (uint256)
     {
@@ -481,7 +441,6 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
     function getPastTotalSupply(uint256 blockNumber)
         public
         view
-        virtual
         override
         returns (uint256)
     {
@@ -538,7 +497,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
     /**
      * @dev Delegate votes from the sender to `delegatee`.
      */
-    function delegate(address delegatee) public virtual override {
+    function delegate(address delegatee) public {
         _delegate(_msgSender(), delegatee);
     }
 
@@ -552,7 +511,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public virtual override {
+    ) public {
         require(block.timestamp <= expiry, "ERC20Votes: signature expired");
         address signer = ECDSA.recover(
             _hashTypedDataV4(
@@ -571,7 +530,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
     /**
      * @dev Maximum token supply. Defaults to `type(uint224).max` (2^224^ - 1).
      */
-    function _maxSupply() internal view virtual returns (uint224) {
+    function _maxSupply() internal pure returns (uint224) {
         return type(uint224).max;
     }
 
@@ -584,7 +543,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         address from,
         address to,
         uint256 amount
-    ) internal virtual {
+    ) internal {
         _moveVotingPower(delegates(from), delegates(to), amount);
     }
 
@@ -593,7 +552,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
      *
      * Emits events {IVotes-DelegateChanged} and {IVotes-DelegateVotesChanged}.
      */
-    function _delegate(address delegator, address delegatee) internal virtual {
+    function _delegate(address delegator, address delegatee) internal {
         address currentDelegate = delegates(delegator);
         uint256 delegatorBalance = balanceOf(delegator);
         _delegates[delegator] = delegatee;
@@ -685,7 +644,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) public virtual {
+    ) public {
         require(block.timestamp <= deadline, "ERC20Permit: expired deadline");
 
         bytes32 structHash = keccak256(
@@ -710,7 +669,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
     /**
      * @dev See {IERC20Permit-nonces}.
      */
-    function nonces(address owner) public view virtual returns (uint256) {
+    function nonces(address owner) public view returns (uint256) {
         return _nonces[owner].current();
     }
 
@@ -727,11 +686,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
      *
      * _Available since v4.1._
      */
-    function _useNonce(address owner)
-        internal
-        virtual
-        returns (uint256 current)
-    {
+    function _useNonce(address owner) internal returns (uint256 current) {
         Counters.Counter storage nonce = _nonces[owner];
         current = nonce.current();
         nonce.increment();
