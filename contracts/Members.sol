@@ -24,25 +24,25 @@ contract Members is ERC165, IERC721, IERC721Metadata {
     mapping(uint256 => address) private _tokenApprovals;
     mapping(address => mapping(address => bool)) private _operatorApprovals;
 
-    uint256 public count = 1;
-    address public boardFactoryAddress;
+    uint256 public _count = 1;
+    address public _boardFactoryAddress;
 
     constructor() {
-        boardFactoryAddress = msg.sender;
+        _boardFactoryAddress = msg.sender;
     }
 
     function mintToFirst(address who, address boardAddress) public {
-        require(msg.sender == boardFactoryAddress, "Wrong address");
-        _safeMint(who, count);
+        require(msg.sender == _boardFactoryAddress, "Wrong address");
+        _safeMint(who, _count);
 
-        address userAddress = address(new Member(address(this), count));
-        _tokenIdToUser[count] = userAddress;
-        _tokenToBoard[count] = boardAddress;
-        count += 1;
+        address userAddress = address(new Member(address(this), _count));
+        _tokenIdToUser[_count] = userAddress;
+        _tokenToBoard[_count] = boardAddress;
+        _count += 1;
     }
 
     function mintTo(address newMember, address boardAddress) public {
-        GovernorBoardFactory x = GovernorBoardFactory(boardFactoryAddress);
+        GovernorBoardFactory x = GovernorBoardFactory(_boardFactoryAddress);
         bool isBoard = x.isBoard(boardAddress);
         require(isBoard, "Not a valid board address");
 
@@ -50,12 +50,12 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         bool isGov = b.isGovernor(msg.sender);
         require(isGov, "Must be a board member");
 
-        address userAddress = address(new Member(address(this), count));
-        _tokenIdToUser[count] = userAddress;
+        address userAddress = address(new Member(address(this), _count));
+        _tokenIdToUser[_count] = userAddress;
 
-        _safeMint(newMember, count);
-        _tokenToBoard[count] = boardAddress;
-        count += 1;
+        _safeMint(newMember, _count);
+        _tokenToBoard[_count] = boardAddress;
+        _count += 1;
     }
 
     function supportsInterface(bytes4 interfaceId)

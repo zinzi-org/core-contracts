@@ -13,28 +13,26 @@ import "./lib/ECDSA.sol";
 import "./lib/EIP712.sol";
 
 contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
-    mapping(address => uint256) private _balances;
+    struct Checkpoint {
+        uint32 fromBlock;
+        uint224 votes;
+    }
 
-    mapping(address => mapping(address => uint256)) private _allowances;
+    using Counters for Counters.Counter;
 
     uint256 private _totalSupply;
 
     string private _name;
     string private _symbol;
 
-    struct Checkpoint {
-        uint32 fromBlock;
-        uint224 votes;
-    }
+    address public _boardAddress;
 
-    bytes32 private constant _DELEGATION_TYPEHASH =
-        keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
-
+    mapping(address => uint256) private _balances;
+    mapping(address => mapping(address => uint256)) private _allowances;
     mapping(address => address) private _delegates;
     mapping(address => Checkpoint[]) private _checkpoints;
-    Checkpoint[] private _totalSupplyCheckpoints;
 
-    using Counters for Counters.Counter;
+    Checkpoint[] private _totalSupplyCheckpoints;
 
     mapping(address => Counters.Counter) private _nonces;
 
@@ -43,22 +41,9 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         keccak256(
             "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
         );
-    /**
-     * @dev In previous versions `_PERMIT_TYPEHASH` was declared as `immutable`.
-     * However, to ensure consistency with the upgradeable transpiler, we will continue
-     * to reserve a slot.
-     * @custom:oz-renamed-from _PERMIT_TYPEHASH
-     */
-    // solhint-disable-next-line var-name-mixedcase
-    bytes32 private _PERMIT_TYPEHASH_DEPRECATED_SLOT;
 
-    /**
-     * @dev Initializes the {EIP712} domain separator using the `name` parameter, and setting `version` to `"1"`.
-     *
-     * It's a good idea to use the same `name` that is defined as the ERC20 token name.
-     */
-
-    address public _boardAddress;
+    bytes32 private constant _DELEGATION_TYPEHASH =
+        keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
 
     constructor(
         string memory name_,
@@ -87,7 +72,7 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         return 18;
     }
 
-    function totalSupply() public view  returns (uint256) {
+    function totalSupply() public view returns (uint256) {
         return _totalSupply;
     }
 
@@ -101,9 +86,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         return true;
     }
 
-    /**
-     * @dev See {IERC20-allowance}.
-     */
     function allowance(address owner, address spender)
         public
         view
@@ -112,38 +94,12 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         return _allowances[owner][spender];
     }
 
-    /**
-     * @dev See {IERC20-approve}.
-     *
-     * NOTE: If `amount` is the maximum `uint256`, the allowance is not updated on
-     * `transferFrom`. This is semantically equivalent to an infinite approval.
-     *
-     * Requirements:
-     *
-     * - `spender` cannot be the zero address.
-     */
     function approve(address spender, uint256 amount) public returns (bool) {
         address owner = _msgSender();
         _approve(owner, spender, amount);
         return true;
     }
 
-    /**
-     * @dev See {IERC20-transferFrom}.
-     *
-     * Emits an {Approval} event indicating the updated allowance. This is not
-     * required by the EIP. See the note at the beginning of {ERC20}.
-     *
-     * NOTE: Does not update the allowance if the current allowance
-     * is the maximum `uint256`.
-     *
-     * Requirements:
-     *
-     * - `from` and `to` cannot be the zero address.
-     * - `from` must have a balance of at least `amount`.
-     * - the caller must have allowance for ``from``'s tokens of at least
-     * `amount`.
-     */
     function transferFrom(
         address from,
         address to,
@@ -155,18 +111,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         return true;
     }
 
-    /**
-     * @dev Atomically increases the allowance granted to `spender` by the caller.
-     *
-     * This is an alternative to {approve} that can be used as a mitigation for
-     * problems described in {IERC20-approve}.
-     *
-     * Emits an {Approval} event indicating the updated allowance.
-     *
-     * Requirements:
-     *
-     * - `spender` cannot be the zero address.
-     */
     function increaseAllowance(address spender, uint256 addedValue)
         public
         returns (bool)
@@ -176,20 +120,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         return true;
     }
 
-    /**
-     * @dev Atomically decreases the allowance granted to `spender` by the caller.
-     *
-     * This is an alternative to {approve} that can be used as a mitigation for
-     * problems described in {IERC20-approve}.
-     *
-     * Emits an {Approval} event indicating the updated allowance.
-     *
-     * Requirements:
-     *
-     * - `spender` cannot be the zero address.
-     * - `spender` must have allowance for the caller of at least
-     * `subtractedValue`.
-     */
     function decreaseAllowance(address spender, uint256 subtractedValue)
         public
         returns (bool)
@@ -207,20 +137,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         return true;
     }
 
-    /**
-     * @dev Moves `amount` of tokens from `from` to `to`.
-     *
-     * This internal function is equivalent to {transfer}, and can be used to
-     * e.g. implement automatic token fees, slashing mechanisms, etc.
-     *
-     * Emits a {Transfer} event.
-     *
-     * Requirements:
-     *
-     * - `from` cannot be the zero address.
-     * - `to` cannot be the zero address.
-     * - `from` must have a balance of at least `amount`.
-     */
     function _transfer(
         address from,
         address to,
@@ -248,15 +164,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         _afterTokenTransfer(from, to, amount);
     }
 
-    /** @dev Creates `amount` tokens and assigns them to `account`, increasing
-     * the total supply.
-     *
-     * Emits a {Transfer} event with `from` set to the zero address.
-     *
-     * Requirements:
-     *
-     * - `account` cannot be the zero address.
-     */
     function _mint(address account, uint256 amount) internal {
         require(account != address(0), "ERC20: mint to the zero address");
 
@@ -279,17 +186,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         _writeCheckpoint(_totalSupplyCheckpoints, _add, amount);
     }
 
-    /**
-     * @dev Destroys `amount` tokens from `account`, reducing the
-     * total supply.
-     *
-     * Emits a {Transfer} event with `to` set to the zero address.
-     *
-     * Requirements:
-     *
-     * - `account` cannot be the zero address.
-     * - `account` must have at least `amount` tokens.
-     */
     function _burn(address account, uint256 amount) internal {
         require(account != address(0), "ERC20: burn from the zero address");
 
@@ -310,19 +206,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         _writeCheckpoint(_totalSupplyCheckpoints, _subtract, amount);
     }
 
-    /**
-     * @dev Sets `amount` as the allowance of `spender` over the `owner` s tokens.
-     *
-     * This internal function is equivalent to `approve`, and can be used to
-     * e.g. set automatic allowances for certain subsystems, etc.
-     *
-     * Emits an {Approval} event.
-     *
-     * Requirements:
-     *
-     * - `owner` cannot be the zero address.
-     * - `spender` cannot be the zero address.
-     */
     function _approve(
         address owner,
         address spender,
@@ -335,14 +218,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         emit Approval(owner, spender, amount);
     }
 
-    /**
-     * @dev Updates `owner` s allowance for `spender` based on spent `amount`.
-     *
-     * Does not update the allowance amount in case of infinite allowance.
-     * Revert if not enough allowance is available.
-     *
-     * Might emit an {Approval} event.
-     */
     function _spendAllowance(
         address owner,
         address spender,
@@ -360,20 +235,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         }
     }
 
-    /**
-     * @dev Hook that is called before any transfer of tokens. This includes
-     * minting and burning.
-     *
-     * Calling conditions:
-     *
-     * - when `from` and `to` are both non-zero, `amount` of ``from``'s tokens
-     * will be transferred to `to`.
-     * - when `from` is zero, `amount` tokens will be minted for `to`.
-     * - when `to` is zero, `amount` of ``from``'s tokens will be burned.
-     * - `from` and `to` are never both zero.
-     *
-     * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
-     */
     function _beforeTokenTransfer(
         address from,
         address to,
@@ -391,35 +252,19 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         return _checkpoints[account][pos];
     }
 
-    /**
-     * @dev Get number of checkpoints for `account`.
-     */
     function numCheckpoints(address account) public view returns (uint32) {
         return SafeCast.toUint32(_checkpoints[account].length);
     }
 
-    /**
-     * @dev Get the address `account` is currently delegating to.
-     */
     function delegates(address account) public view returns (address) {
         return _delegates[account];
     }
 
-    /**
-     * @dev Gets the current votes balance for `account`
-     */
     function getVotes(address account) public view returns (uint256) {
         uint256 pos = _checkpoints[account].length;
         return pos == 0 ? 0 : _checkpoints[account][pos - 1].votes;
     }
 
-    /**
-     * @dev Retrieve the number of votes for `account` at the end of `blockNumber`.
-     *
-     * Requirements:
-     *
-     * - `blockNumber` must have been already mined
-     */
     function getPastVotes(address account, uint256 blockNumber)
         public
         view
@@ -430,14 +275,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         return _checkpointsLookup(_checkpoints[account], blockNumber);
     }
 
-    /**
-     * @dev Retrieve the `totalSupply` at the end of `blockNumber`. Note, this value is the sum of all balances.
-     * It is but NOT the sum of all the delegated votes!
-     *
-     * Requirements:
-     *
-     * - `blockNumber` must have been already mined
-     */
     function getPastTotalSupply(uint256 blockNumber)
         public
         view
@@ -448,26 +285,11 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         return _checkpointsLookup(_totalSupplyCheckpoints, blockNumber);
     }
 
-    /**
-     * @dev Lookup a value in a list of (sorted) checkpoints.
-     */
     function _checkpointsLookup(Checkpoint[] storage ckpts, uint256 blockNumber)
         private
         view
         returns (uint256)
     {
-        // We run a binary search to look for the earliest checkpoint taken after `blockNumber`.
-        //
-        // Initially we check if the block is recent to narrow the search range.
-        // During the loop, the index of the wanted checkpoint remains in the range [low-1, high).
-        // With each iteration, either `low` or `high` is moved towards the middle of the range to maintain the invariant.
-        // - If the middle checkpoint is after `blockNumber`, we look in [low, mid)
-        // - If the middle checkpoint is before or equal to `blockNumber`, we look in [mid+1, high)
-        // Once we reach a single value (when low == high), we've found the right checkpoint at the index high-1, if not
-        // out of bounds (in which case we're looking too far in the past and the result is 0).
-        // Note that if the latest checkpoint available is exactly for `blockNumber`, we end up with an index that is
-        // past the end of the array, so we technically don't find a checkpoint after `blockNumber`, but it works out
-        // the same.
         uint256 length = ckpts.length;
 
         uint256 low = 0;
@@ -494,16 +316,10 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         return high == 0 ? 0 : _unsafeAccess(ckpts, high - 1).votes;
     }
 
-    /**
-     * @dev Delegate votes from the sender to `delegatee`.
-     */
     function delegate(address delegatee) public {
         _delegate(_msgSender(), delegatee);
     }
 
-    /**
-     * @dev Delegates votes from signer to `delegatee`
-     */
     function delegateBySig(
         address delegatee,
         uint256 nonce,
@@ -527,18 +343,10 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         _delegate(signer, delegatee);
     }
 
-    /**
-     * @dev Maximum token supply. Defaults to `type(uint224).max` (2^224^ - 1).
-     */
     function _maxSupply() internal pure returns (uint224) {
         return type(uint224).max;
     }
 
-    /**
-     * @dev Move voting power when tokens are transferred.
-     *
-     * Emits a {IVotes-DelegateVotesChanged} event.
-     */
     function _afterTokenTransfer(
         address from,
         address to,
@@ -547,11 +355,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         _moveVotingPower(delegates(from), delegates(to), amount);
     }
 
-    /**
-     * @dev Change delegation for `delegator` to `delegatee`.
-     *
-     * Emits events {IVotes-DelegateChanged} and {IVotes-DelegateVotesChanged}.
-     */
     function _delegate(address delegator, address delegatee) internal {
         address currentDelegate = delegates(delegator);
         uint256 delegatorBalance = balanceOf(delegator);

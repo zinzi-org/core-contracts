@@ -18,10 +18,8 @@ describe("Base Test Setup", () => {
         const factory = await BoardFactory.deploy();
         var memberAddress = await factory.membersAddress();
         const memberContract = new ethers.Contract(memberAddress, memberCompiled.abi, owner);
-        const memberVotesAddress = memberContract.get
-        const memberVotes = new ethers.Contract(memberVotesAddress, memberVotesCompiled.abi, owner);
 
-        return { factory, memberContract, owner, otherAccount, memberVotes };
+        return { factory, memberContract, owner, otherAccount };
     }
 
     it('has board member factory with member board', async () => {
@@ -30,7 +28,7 @@ describe("Base Test Setup", () => {
         var symbol = await memberContract.symbol();
         expect(symbol).to.equal("MM");
 
-        expect(await factory.create()).to.emit(factory, "BoardCreated").withArgs(anyValue);
+        expect(await factory.create("ZinziDAO", "ZZ")).to.emit(factory, "BoardCreated").withArgs(anyValue);
 
         var balance = await memberContract.balanceOf(owner.address);
         expect(balance).to.equal(1);
@@ -55,7 +53,7 @@ describe("Base Test Setup", () => {
 
     it('can add member to group', async () => {
         const { factory, memberContract, owner, otherAccount } = await loadFixture(fixture);
-        await factory.create();
+        await factory.create("ZinziDAO", "ZZ");
         var balance = await memberContract.balanceOf(owner.address);
         var groupId = await memberContract.getTokenGroup(balance);
         const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
@@ -66,7 +64,7 @@ describe("Base Test Setup", () => {
 
     it('can add member to group', async () => {
         const { factory, memberContract, owner, otherAccount } = await loadFixture(fixture);
-        await factory.create();
+        await factory.create("ZinziDAO", "ZZ");
         var balance = await memberContract.balanceOf(owner.address);
         var groupId = await memberContract.getTokenGroup(balance);
         const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
@@ -77,11 +75,15 @@ describe("Base Test Setup", () => {
 
     it('governor can create proposal', async () => {
         const { factory, memberContract, owner, otherAccount } = await loadFixture(fixture);
-        await factory.create();
+        await factory.create("ZinziDAO", "ZZ");
         var balance = await memberContract.balanceOf(owner.address);
         var groupId = await memberContract.getTokenGroup(balance);
         const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
         await memberContract.mintTo(otherAccount.address, groupId);
+        const options = { gasLimit : 5000000 };
+        await memberBoard.propose("test", 1, options);
+        const memberVotesAddress = memberBoard.getMemberVotesAddress();
+        const memberVotes = new ethers.Contract(memberVotesAddress, memberVotesCompiled.abi, owner);
     });
 
 

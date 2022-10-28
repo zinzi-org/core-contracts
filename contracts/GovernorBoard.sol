@@ -11,22 +11,14 @@ import "./MemberVote.sol";
 
 contract GovernorBoard {
     IVotes public immutable _token;
-
     using Timers for Timers.BlockNumber;
-
-    using SafeCast for uint256;
-    uint256 private _votingDelay;
-    uint256 private _votingPeriod;
-
-    address immutable _memberAddress;
 
     enum PropType {
         TEXT_BASED_PROPOSAL,
         ADD_GOVERNOR,
         REMOVE_GOVERNOR,
         SET_BOARD_URL,
-        REMOVE_MEMBER,
-        REBUKE_MEMBER
+        REMOVE_MEMBER
     }
 
     struct ProposalCore {
@@ -59,6 +51,12 @@ contract GovernorBoard {
         Expired,
         Executed
     }
+
+    using SafeCast for uint256;
+    uint256 private _votingDelay;
+    uint256 private _votingPeriod;
+
+    address immutable _memberAddress;
 
     mapping(uint256 => ProposalVote) private _proposalVotes;
 
@@ -106,12 +104,6 @@ contract GovernorBoard {
         return address(_token);
     }
 
-    /**
-     * @dev Internal vote casting mechanism: Check that the vote is pending, that it has not been cast yet, retrieve
-     * voting weight using {IGovernor-getVotes} and call the {_countVote} internal function.
-     *
-     * Emits a {IGovernor-VoteCast} event.
-     */
     function _castVote(
         uint256 proposalId,
         address account,
@@ -185,18 +177,12 @@ contract GovernorBoard {
         }
     }
 
-    function hashProposal(
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory calldatas,
-        bytes32 descriptionHash
-    ) public pure returns (uint256) {
-        return
-            uint256(
-                keccak256(
-                    abi.encode(targets, values, calldatas, descriptionHash)
-                )
-            );
+    function hashProposal(PropType pType, bytes32 descriptionHash)
+        public
+        pure
+        returns (uint256)
+    {
+        return uint256(keccak256(abi.encode(pType, descriptionHash)));
     }
 
     function state(uint256 proposalId) public view returns (ProposalState) {
@@ -257,16 +243,10 @@ contract GovernorBoard {
         return _proposals[proposalId].voteEnd.getDeadline();
     }
 
-    /**
-     * @dev See {IGovernor-votingDelay}.
-     */
     function votingDelay() public view returns (uint256) {
         return _votingDelay;
     }
 
-    /**
-     * @dev See {IGovernor-votingPeriod}.
-     */
     function votingPeriod() public view returns (uint256) {
         return _votingPeriod;
     }
@@ -279,15 +259,12 @@ contract GovernorBoard {
         return _getVotes(account, blockNumber);
     }
 
-    function propose(
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory calldatas,
-        string memory description,
-        PropType pType
-    ) public returns (uint256) {
+    function propose(string memory description, PropType pType)
+        public
+        returns (uint256)
+    {
         require(
-            _getVotes(msg.sender, block.number) >= _proposalThreshold,
+            _getVotes(msg.sender, (block.number - 1)) >= _proposalThreshold,
             "Not enough voting power to create proposal"
         );
 
@@ -295,22 +272,7 @@ contract GovernorBoard {
 
         if (pType == PropType.REMOVE_GOVERNOR) {}
 
-        uint256 proposalId = hashProposal(
-            targets,
-            values,
-            calldatas,
-            keccak256(bytes(description))
-        );
-
-        require(
-            targets.length == values.length,
-            "Governor: invalid proposal length"
-        );
-        require(
-            targets.length == calldatas.length,
-            "Governor: invalid proposal length"
-        );
-        require(targets.length > 0, "Governor: empty proposal");
+        uint256 proposalId = hashProposal(pType, keccak256(bytes(description)));
 
         ProposalCore storage proposal = _proposals[proposalId];
         require(
@@ -325,5 +287,12 @@ contract GovernorBoard {
         proposal.voteEnd.setDeadline(deadline);
 
         return proposalId;
+    }
+
+    function castVote(uint256 proposalId, uint8 support)
+        public
+        returns (uint256)
+    {
+        return _castVote(proposalId, msg.sender, support);
     }
 }
