@@ -20,7 +20,11 @@ contract GovernorBoard {
         ADD_GOVERNOR, // we need an address
         REMOVE_GOVERNOR, // we need an address
         SET_BOARD_URL, // we need a string
-        REMOVE_MEMBER // we need an address
+        REMOVE_MEMBER, // we need an address
+        SET_PROP_DURATION, // need a number
+        SET_PROP_DELAY, // need a number
+        SET_DELEGATION_PERCENTAGE, // need a number
+        SET_DELEGATION_THRESHOLD // need a number
     }
 
     struct ProposalCore {
@@ -61,7 +65,7 @@ contract GovernorBoard {
     uint256 private _votingDelay = 0;
     uint256 private _votingPeriod = 1000;
     uint256 private _memberDelegationPercentatge = 10;
-    uint256 private _minMemberCountForDelgations = 10;
+    uint256 private _minMemberCountForDelgations = 5;
 
     mapping(address => address) public _memberToGovWhoApproved;
     uint256 private _memberCount;
@@ -132,13 +136,28 @@ contract GovernorBoard {
     //members cannot just create proposals.. only governors can do that.. but if a member gets enough delgated votes he can create a proposal
     //he needs a certain _memberDelegationPercentatge and cannot do it with a org that has fewer than 5 members
     function memberHasDelegation(address who) public view returns (bool) {
+        console.log("Total Member Count");
+        console.log(_memberCount + _governors.length);
+        console.log("Min Member Count");
+        console.log(_minMemberCountForDelgations);
         require(
-            _memberCount > _minMemberCountForDelgations,
+            _memberCount >= _minMemberCountForDelgations,
             "Member does not have a delegation"
         );
         uint256 numOfVotesForDelegatedStatus = ((100 * _memberCount) / 100);
+
+        console.log("Number of Votes For Delegated Status");
+        console.log(numOfVotesForDelegatedStatus);
+        console.log("Member Delegation Percentage");
+        console.log(_memberDelegationPercentatge);
+        console.log("---");
+        console.log(
+            ((100 * numOfVotesForDelegatedStatus) /
+                _memberDelegationPercentatge)
+        );
         require(
-            (numOfVotesForDelegatedStatus * _memberDelegationPercentatge) >=
+            ((100 * numOfVotesForDelegatedStatus) /
+                _memberDelegationPercentatge) >=
                 getVotes(who, block.number - 1),
             "Member does not have a delegation"
         );

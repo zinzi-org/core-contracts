@@ -10,12 +10,6 @@ const memberCompiled = require("../artifacts/contracts/Members.sol/Members.json"
 const memberBoardCompiled = require("../artifacts/contracts/GovernorBoard.sol/GovernorBoard.json");
 const memberVotesCompiled = require("../artifacts/contracts/MemberVote.sol/MemberVote.json");
 
-async function mineNBlocks(n) {
-    for (let index = 0; index < n; index++) {
-        await ethers.provider.send('evm_mine');
-    }
-}
-
 describe("Base Test Setup", () => {
 
     async function fixture() {
@@ -77,7 +71,6 @@ describe("Base Test Setup", () => {
         const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
         await memberBoard.addMember(otherAccount.address);
         const options = { gasLimit: 1000000 };
-        //submit a text based prop.. this has no internal outcome
         await memberBoard.propose("test text", 0, ethers.constants.AddressZero, options);
         const memberVotesAddress = memberBoard.getMemberVotesAddress();
         const memberVotes = new ethers.Contract(memberVotesAddress, memberVotesCompiled.abi, owner);
@@ -93,13 +86,9 @@ describe("Base Test Setup", () => {
         const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
         const memberBoardOther = new ethers.Contract(groupId, memberBoardCompiled.abi, otherAccount);
         await memberBoard.addMember(otherAccount.address);
-        //submit a text based prop.. this has no internal outcome
         const options = { gasLimit: 1000000 };
-
         await expect(memberBoardOther.propose("test text", 0, ethers.constants.AddressZero, options))
             .to.be.revertedWith("Member does not have a delegation");
-
-
     });
 
     it("member can create proposal with delegation", async () => {
@@ -108,30 +97,31 @@ describe("Base Test Setup", () => {
         var balance = await memberContract.balanceOf(owner.address);
         var groupId = await memberContract.getTokenGroup(balance);
         const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
-        const memberBoardOther = new ethers.Contract(groupId, memberBoardCompiled.abi, otherAccount);
 
         await memberBoard.addMember(otherAccount.address);
-
         const signers = [];
+
         for (let i = 0; i < 15; i++) {
             wallet = ethers.Wallet.createRandom();
             wallet = wallet.connect(ethers.provider);
-            await owner.sendTransaction({to: wallet.address, value: ethers.utils.parseEther(".5")});
+            await owner.sendTransaction({ to: wallet.address, value: ethers.utils.parseEther(".5") });
             signers.push(wallet);
         }
 
         const memberVotesAddress = await memberBoard.getMemberVotesAddress();
         const options = { gasLimit: 1000000 };
-        for (var i = 0; i < signers.length; i++) {
-            const memberVotes = new ethers.Contract(memberVotesAddress, memberVotesCompiled.abi, signers[i]);
+
+        for (var i = 0; i < 15; i++) {
             await memberBoard.addMember(signers[i].address);
+        }
+
+        for (var i = 0; i < 2; i++) {
+            const memberVotes = new ethers.Contract(memberVotesAddress, memberVotesCompiled.abi, signers[i]);
             await memberVotes.delegate(otherAccount.address, options);
         }
 
-
+        const memberBoardOther = new ethers.Contract(groupId, memberBoardCompiled.abi, otherAccount);
         await memberBoardOther.propose("test text", 0, ethers.constants.AddressZero, options);
-
-
     });
 
 
