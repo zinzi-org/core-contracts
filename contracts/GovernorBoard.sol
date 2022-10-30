@@ -16,11 +16,11 @@ contract GovernorBoard {
     using SafeCast for uint256;
 
     enum PropType {
-        TEXT_BASED_PROPOSAL,
-        ADD_GOVERNOR,
-        REMOVE_GOVERNOR,
-        SET_BOARD_URL,
-        REMOVE_MEMBER
+        TEXT_BASED_PROPOSAL, //external outcome
+        ADD_GOVERNOR, // we need an address
+        REMOVE_GOVERNOR, // we need an address
+        SET_BOARD_URL, // we need a string
+        REMOVE_MEMBER // we need an address
     }
 
     struct ProposalCore {
@@ -28,6 +28,8 @@ contract GovernorBoard {
         Timers.BlockNumber voteEnd;
         bool executed;
         bool canceled;
+        address who;
+        string url;
     }
 
     struct ProposalVote {
@@ -56,12 +58,14 @@ contract GovernorBoard {
 
     IVotes public immutable _token;
 
-    uint256 private _votingDelay;
-    uint256 private _votingPeriod;
-    uint256 public _proposalThreshold = 10;
+    uint256 private _votingDelay = 0;
+    uint256 private _votingPeriod = 1000;
+
+    mapping(address => address) public _memberToGovWhoApproved;
+    uint256 private _memberCount;
 
     address[] public _governors;
-    address immutable _membersAddress;
+    address immutable _membersContractAddress;
 
     mapping(uint256 => ProposalVote) private _proposalVotes;
     mapping(uint256 => ProposalCore) private _proposals;
@@ -80,11 +84,11 @@ contract GovernorBoard {
         string memory tokenName,
         string memory tokenSymbol
     ) {
-        _membersAddress = memberAddress;
+        _membersContractAddress = memberAddress;
         _governors.push(sender);
         _governorsMapping[sender] = _governors.length;
         _token = IVotes(new MemberVote(tokenName, tokenSymbol, address(this)));
-        _token.voteMinterForBoard(sender, 10);
+        _token.assignVoteToken(sender);
     }
 
     modifier onlyGovernor() {
@@ -92,10 +96,98 @@ contract GovernorBoard {
         _;
     }
 
+    modifier onlyMember() {
+        Members members = Members(_membersContractAddress);
+        require(members.balanceOf(msg.sender) > 0, "Not a member");
+        _;
+    }
+
+    function addGovernor(uint256 propId) public {
+        require(
+            state(propId) == ProposalState.Succeeded,
+            "Invalid Proposal State"
+        );
+
+        address newGov = _proposals[propId].who;
+        _governors.push(newGov);
+        _governorsMapping[newGov] = _governors.length;
+
+        //if is existing member then remove him from member count since he is now part of the governor weight metric
+        if (_memberToGovWhoApproved[newGov] != address(0)) {
+            _memberCount -= 1;
+            _memberToGovWhoApproved[newGov] = address(0);
+        }
+    }
+
     function addMember(address newAddress) public onlyGovernor {
-        Members members = Members(_membersAddress);
+        Members members = Members(_membersContractAddress);
         members.mintTo(newAddress);
-        _token.voteMinterForBoard(newAddress, 1);
+        _token.assignVoteToken(newAddress);
+        _memberCount += 1;
+        _memberToGovWhoApproved[newAddress] = msg.sender;
+    }
+
+    function getVoteWeight() public view returns (uint256) {
+        uint256 sendersVoteCount = getVotes(msg.sender, block.number - 1);
+        require(sendersVoteCount != 0);
+        return ((100 * (_memberCount + _governors.length)) / sendersVoteCount);
+    }
+
+    ///PROPOSAL CREATION THRESHOLD WEIGHTS
+    //members cannot just create proposals.. only governors can do that.. but if a member gets enough delgated votes he can create a proposal
+    //he needs 10% of delegation and cannot do it with a org that has fewer than 5 members
+    function memberCanCreateProposal(address who) public view returns (bool) {
+        require(_memberCount > 5);
+        uint256 numOfVotesForDelegatedStatus = ((100 * _memberCount) / 100);
+        require(
+            numOfVotesForDelegatedStatus >= getVotes(who, block.number - 1)
+        );
+        return true;
+    }
+
+    function getGovWhoApprovedMember(address who)
+        public
+        view
+        returns (address)
+    {
+        return _memberToGovWhoApproved[who];
+    }
+
+    function castVote(uint256 proposalId, uint8 support)
+        public
+        returns (uint256)
+    {
+        return _castVote(proposalId, msg.sender, support);
+    }
+
+    function propose(string memory description, PropType pType)
+        public
+        returns (uint256)
+    {
+        require(
+            isGovernor(msg.sender) || memberCanCreateProposal(msg.sender),
+            "Not enough voting power to create proposal"
+        );
+
+        if (pType == PropType.ADD_GOVERNOR) {}
+
+        if (pType == PropType.REMOVE_GOVERNOR) {}
+
+        uint256 proposalId = hashProposal(pType, keccak256(bytes(description)));
+
+        ProposalCore storage proposal = _proposals[proposalId];
+        require(
+            proposal.voteStart.isUnset(),
+            "Governor: proposal already exists"
+        );
+
+        uint64 snapshot = block.number.toUint64() + votingDelay().toUint64();
+        uint64 deadline = snapshot + votingPeriod().toUint64();
+
+        proposal.voteStart.setDeadline(snapshot);
+        proposal.voteEnd.setDeadline(deadline);
+
+        return proposalId;
     }
 
     function isGovernor(address who) public view returns (bool) {
@@ -108,23 +200,6 @@ contract GovernorBoard {
 
     function getMemberVotesAddress() public view returns (address) {
         return address(_token);
-    }
-
-    function _castVote(
-        uint256 proposalId,
-        address account,
-        uint8 support
-    ) internal returns (uint256) {
-        ProposalCore storage proposal = _proposals[proposalId];
-        require(
-            state(proposalId) == ProposalState.Active,
-            "Governor: vote not currently active"
-        );
-
-        uint256 weight = _getVotes(account, proposal.voteStart.getDeadline());
-        _countVote(proposalId, account, support, weight);
-
-        return weight;
     }
 
     function proposalVotes(uint256 proposalId)
@@ -150,38 +225,6 @@ contract GovernorBoard {
         returns (bool)
     {
         return _proposalVotes[proposalId].hasVoted[account];
-    }
-
-    function _voteSucceeded(uint256 proposalId) internal view returns (bool) {
-        ProposalVote storage proposalVote = _proposalVotes[proposalId];
-
-        return proposalVote.forVotes > proposalVote.againstVotes;
-    }
-
-    function _countVote(
-        uint256 proposalId,
-        address account,
-        uint8 support,
-        uint256 weight
-    ) internal {
-        ProposalVote storage proposalVote = _proposalVotes[proposalId];
-
-        require(
-            !proposalVote.hasVoted[account],
-            "GovernorVotingSimple: vote already cast"
-        );
-
-        proposalVote.hasVoted[account] = true;
-
-        if (support == uint8(VoteType.Against)) {
-            proposalVote.againstVotes += weight;
-        } else if (support == uint8(VoteType.For)) {
-            proposalVote.forVotes += weight;
-        } else if (support == uint8(VoteType.Abstain)) {
-            proposalVote.abstainVotes += weight;
-        } else {
-            revert("GovernorVotingSimple: invalid value for enum VoteType");
-        }
     }
 
     function hashProposal(PropType pType, bytes32 descriptionHash)
@@ -234,14 +277,6 @@ contract GovernorBoard {
         return _proposals[proposalId].voteStart.getDeadline();
     }
 
-    function _getVotes(address account, uint256 blockNumber)
-        internal
-        view
-        returns (uint256)
-    {
-        return _token.getPastVotes(account, blockNumber);
-    }
-
     function proposalDeadline(uint256 proposalId)
         public
         view
@@ -266,40 +301,60 @@ contract GovernorBoard {
         return _getVotes(account, blockNumber);
     }
 
-    function propose(string memory description, PropType pType)
-        public
-        returns (uint256)
-    {
-        require(
-            getVotes(msg.sender, 2) >= _proposalThreshold,
-            "Not enough voting power to create proposal"
-        );
-
-        if (pType == PropType.ADD_GOVERNOR) {}
-
-        if (pType == PropType.REMOVE_GOVERNOR) {}
-
-        uint256 proposalId = hashProposal(pType, keccak256(bytes(description)));
-
+    function _castVote(
+        uint256 proposalId,
+        address account,
+        uint8 support
+    ) internal returns (uint256) {
         ProposalCore storage proposal = _proposals[proposalId];
         require(
-            proposal.voteStart.isUnset(),
-            "Governor: proposal already exists"
+            state(proposalId) == ProposalState.Active,
+            "Governor: vote not currently active"
         );
 
-        uint64 snapshot = block.number.toUint64() + votingDelay().toUint64();
-        uint64 deadline = snapshot + votingPeriod().toUint64();
+        uint256 weight = _getVotes(account, proposal.voteStart.getDeadline());
+        _countVote(proposalId, account, support, weight);
 
-        proposal.voteStart.setDeadline(snapshot);
-        proposal.voteEnd.setDeadline(deadline);
-
-        return proposalId;
+        return weight;
     }
 
-    function castVote(uint256 proposalId, uint8 support)
-        public
+    function _voteSucceeded(uint256 proposalId) internal view returns (bool) {
+        ProposalVote storage proposalVote = _proposalVotes[proposalId];
+
+        return proposalVote.forVotes > proposalVote.againstVotes;
+    }
+
+    function _countVote(
+        uint256 proposalId,
+        address account,
+        uint8 support,
+        uint256 weight
+    ) internal {
+        ProposalVote storage proposalVote = _proposalVotes[proposalId];
+
+        require(
+            !proposalVote.hasVoted[account],
+            "GovernorVotingSimple: vote already cast"
+        );
+
+        proposalVote.hasVoted[account] = true;
+
+        if (support == uint8(VoteType.Against)) {
+            proposalVote.againstVotes += weight;
+        } else if (support == uint8(VoteType.For)) {
+            proposalVote.forVotes += weight;
+        } else if (support == uint8(VoteType.Abstain)) {
+            proposalVote.abstainVotes += weight;
+        } else {
+            revert("GovernorVotingSimple: invalid value for enum VoteType");
+        }
+    }
+
+    function _getVotes(address account, uint256 blockNumber)
+        internal
+        view
         returns (uint256)
     {
-        return _castVote(proposalId, msg.sender, support);
+        return _token.getPastVotes(account, blockNumber);
     }
 }

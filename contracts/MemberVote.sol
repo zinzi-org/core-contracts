@@ -11,10 +11,11 @@ import "./lib/Counters.sol";
 import "./lib/Math.sol";
 import "./lib/ECDSA.sol";
 import "./lib/EIP712.sol";
+import "./lib/IERC20.sol";
 
 import "hardhat/console.sol";
 
-contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
+contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
     struct Checkpoint {
         uint32 fromBlock;
         uint224 votes;
@@ -30,19 +31,12 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
     address public _boardAddress;
 
     mapping(address => uint256) private _balances;
-    mapping(address => mapping(address => uint256)) private _allowances;
     mapping(address => address) private _delegates;
     mapping(address => Checkpoint[]) private _checkpoints;
 
     Checkpoint[] private _totalSupplyCheckpoints;
 
     mapping(address => Counters.Counter) private _nonces;
-
-    // solhint-disable-next-line var-name-mixedcase
-    bytes32 private constant _PERMIT_TYPEHASH =
-        keccak256(
-            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
-        );
 
     bytes32 private constant _DELEGATION_TYPEHASH =
         keccak256("Delegation(address delegatee,uint256 nonce,uint256 expiry)");
@@ -57,10 +51,9 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         _boardAddress = boardAddress;
     }
 
-    function voteMinterForBoard(address who, uint256 amount) public {
+    function assignVoteToken(address who) public {
         require(msg.sender == _boardAddress);
-        _mint(who, amount);
-        _moveVotingPower(address(0), who, amount);
+        _mint(who, 1);
     }
 
     function name() public view returns (string memory) {
@@ -83,84 +76,48 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         return _balances[account];
     }
 
-    function transfer(address to, uint256 amount) public returns (bool) {
-        address owner = _msgSender();
-        _transfer(owner, to, amount);
-        return true;
+    //method that will always fail and does not show compile warnings
+    function transfer(address to, uint256 amount) public view returns (bool) {
+        require(true == false, "Must delegate votes not transfer");
+        require(to == address(this));
+        require(amount == 0);
+        return false;
     }
 
+    //method that will always fail and does not show compile warnings
     function allowance(address owner, address spender)
         public
         view
         returns (uint256)
     {
-        return _allowances[owner][spender];
+        require(owner == address(this));
+        require(spender == address(0));
+        return 0;
     }
 
-    function approve(address spender, uint256 amount) public returns (bool) {
-        address owner = _msgSender();
-        _approve(owner, spender, amount);
-        return true;
+    //method that will always fail and does not show compile warnings
+    function approve(address spender, uint256 amount)
+        public
+        pure
+        returns (bool)
+    {
+        require(true == false, "Must delegate votes not transfer");
+        require(spender == address(0));
+        require(amount == 0);
+        return false;
     }
 
+    //method that will always fail and does not show compile warnings
     function transferFrom(
         address from,
         address to,
         uint256 amount
-    ) public returns (bool) {
-        address spender = _msgSender();
-        _spendAllowance(from, spender, amount);
-        _transfer(from, to, amount);
-        return true;
-    }
-
-    function increaseAllowance(address spender, uint256 addedValue)
-        public
-        returns (bool)
-    {
-        address owner = _msgSender();
-        _approve(owner, spender, allowance(owner, spender) + addedValue);
-        return true;
-    }
-
-    function decreaseAllowance(address spender, uint256 subtractedValue)
-        public
-        returns (bool)
-    {
-        address owner = _msgSender();
-        uint256 currentAllowance = allowance(owner, spender);
-        require(
-            currentAllowance >= subtractedValue,
-            "ERC20: decreased allowance below zero"
-        );
-        unchecked {
-            _approve(owner, spender, currentAllowance - subtractedValue);
-        }
-
-        return true;
-    }
-
-    function _transfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal {
-        require(from != address(0), "ERC20: transfer from the zero address");
-        require(to != address(0), "ERC20: transfer to the zero address");
-
-        uint256 fromBalance = _balances[from];
-        require(
-            fromBalance >= amount,
-            "ERC20: transfer amount exceeds balance"
-        );
-        unchecked {
-            _balances[from] = fromBalance - amount;
-            _balances[to] += amount;
-        }
-
-        emit Transfer(from, to, amount);
-
-        _afterTokenTransfer(from, to, amount);
+    ) public pure returns (bool) {
+        require(true == false, "Must delegate votes not transfer");
+        require(from == address(0));
+        require(to == address(0));
+        require(amount == 0);
+        return false;
     }
 
     function _mint(address account, uint256 amount) internal {
@@ -201,38 +158,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         _writeCheckpoint(_totalSupplyCheckpoints, _subtract, amount);
     }
 
-    function _approve(
-        address owner,
-        address spender,
-        uint256 amount
-    ) internal {
-        require(owner != address(0), "ERC20: approve from the zero address");
-        require(spender != address(0), "ERC20: approve to the zero address");
-
-        _allowances[owner][spender] = amount;
-        emit Approval(owner, spender, amount);
-    }
-
-    function _spendAllowance(
-        address owner,
-        address spender,
-        uint256 amount
-    ) internal {
-        uint256 currentAllowance = allowance(owner, spender);
-        if (currentAllowance != type(uint256).max) {
-            require(
-                currentAllowance >= amount,
-                "ERC20: insufficient allowance"
-            );
-            unchecked {
-                _approve(owner, spender, currentAllowance - amount);
-            }
-        }
-    }
-
-    /**
-     * @dev Get the `pos`-th checkpoint for `account`.
-     */
     function checkpoints(address account, uint32 pos)
         public
         view
@@ -246,7 +171,12 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
     }
 
     function delegates(address account) public view returns (address) {
-        return _delegates[account];
+        address del = _delegates[account];
+        if (del == address(0)) {
+            return account;
+        } else {
+            return del;
+        }
     }
 
     function getVotes(address account) public view returns (uint256) {
@@ -422,39 +352,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
             mstore(0, ckpts.slot)
             result.slot := add(keccak256(0, 0x20), pos)
         }
-    }
-
-    /**
-     * @dev See {IERC20Permit-permit}.
-     */
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) public {
-        require(block.timestamp <= deadline, "ERC20Permit: expired deadline");
-
-        bytes32 structHash = keccak256(
-            abi.encode(
-                _PERMIT_TYPEHASH,
-                owner,
-                spender,
-                value,
-                _useNonce(owner),
-                deadline
-            )
-        );
-
-        bytes32 hash = _hashTypedDataV4(structHash);
-
-        address signer = ECDSA.recover(hash, v, r, s);
-        require(signer == owner, "ERC20Permit: invalid signature");
-
-        _approve(owner, spender, value);
     }
 
     /**
