@@ -60,6 +60,8 @@ contract GovernorBoard {
 
     uint256 private _votingDelay = 0;
     uint256 private _votingPeriod = 1000;
+    uint256 private _memberDelegationPercentatge = 10;
+    uint256 private _minMemberCountForDelgations = 10;
 
     mapping(address => address) public _memberToGovWhoApproved;
     uint256 private _memberCount;
@@ -127,20 +129,14 @@ contract GovernorBoard {
         _memberToGovWhoApproved[newAddress] = msg.sender;
     }
 
-    function getVoteWeight() public view returns (uint256) {
-        uint256 sendersVoteCount = getVotes(msg.sender, block.number - 1);
-        require(sendersVoteCount != 0);
-        return ((100 * (_memberCount + _governors.length)) / sendersVoteCount);
-    }
-
-    ///PROPOSAL CREATION THRESHOLD WEIGHTS
     //members cannot just create proposals.. only governors can do that.. but if a member gets enough delgated votes he can create a proposal
-    //he needs 10% of delegation and cannot do it with a org that has fewer than 5 members
-    function memberCanCreateProposal(address who) public view returns (bool) {
-        require(_memberCount > 5);
+    //he needs a certain _memberDelegationPercentatge and cannot do it with a org that has fewer than 5 members
+    function memberHasDelegation(address who) public view returns (bool) {
+        require(_memberCount > _minMemberCountForDelgations);
         uint256 numOfVotesForDelegatedStatus = ((100 * _memberCount) / 100);
         require(
-            numOfVotesForDelegatedStatus >= getVotes(who, block.number - 1)
+            (numOfVotesForDelegatedStatus * _memberDelegationPercentatge) >=
+                getVotes(who, block.number - 1)
         );
         return true;
     }
@@ -160,22 +156,28 @@ contract GovernorBoard {
         return _castVote(proposalId, msg.sender, support);
     }
 
-    function propose(string memory description, PropType pType)
-        public
-        returns (uint256)
-    {
+    function propose(
+        string memory description,
+        PropType pType,
+        address who
+    ) public returns (uint256) {
         require(
-            isGovernor(msg.sender) || memberCanCreateProposal(msg.sender),
+            isGovernor(msg.sender) || memberHasDelegation(msg.sender),
             "Not enough voting power to create proposal"
         );
-
-        if (pType == PropType.ADD_GOVERNOR) {}
-
-        if (pType == PropType.REMOVE_GOVERNOR) {}
 
         uint256 proposalId = hashProposal(pType, keccak256(bytes(description)));
 
         ProposalCore storage proposal = _proposals[proposalId];
+
+        if (pType == PropType.ADD_GOVERNOR) {
+            proposal.who = who;
+        }
+
+        if (pType == PropType.REMOVE_GOVERNOR) {
+            proposal.who = who;
+        }
+
         require(
             proposal.voteStart.isUnset(),
             "Governor: proposal already exists"
