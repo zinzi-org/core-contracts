@@ -76,8 +76,26 @@ describe("Base Test Setup", () => {
         var groupId = await memberContract.getTokenGroup(balance);
         const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
         await memberBoard.addMember(otherAccount.address);
-        const options = { gasLimit: 5000000 };
-        await memberBoard.propose("test", 1, options);
+        const options = { gasLimit: 1000000 };
+        //submit a text based prop.. this has no internal outcome
+        await memberBoard.propose("test text", 0, ethers.constants.AddressZero, options);
+        const memberVotesAddress = memberBoard.getMemberVotesAddress();
+        const memberVotes = new ethers.Contract(memberVotesAddress, memberVotesCompiled.abi, owner);
+        var newMemberVoteBalance = await memberVotes.balanceOf(otherAccount.address);
+        expect(newMemberVoteBalance).to.equal(1);
+    });
+
+    it("member cannot create proposal without delegation", async () => {
+        const { factory, memberContract, owner, otherAccount } = await loadFixture(fixture);
+        await factory.create("ZinziDAO", "ZZ");
+        var balance = await memberContract.balanceOf(owner.address);
+        var groupId = await memberContract.getTokenGroup(balance);
+        const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
+        const memberBoardOther = new ethers.Contract(groupId, memberBoardCompiled.abi, otherAccount);
+        await memberBoard.addMember(otherAccount.address);
+        //submit a text based prop.. this has no internal outcome
+        const options = { gasLimit: 1000000 };
+        await memberBoardOther.propose("test text", 0, ethers.constants.AddressZero, options);
         const memberVotesAddress = memberBoard.getMemberVotesAddress();
         const memberVotes = new ethers.Contract(memberVotesAddress, memberVotesCompiled.abi, owner);
         var newMemberVoteBalance = await memberVotes.balanceOf(otherAccount.address);

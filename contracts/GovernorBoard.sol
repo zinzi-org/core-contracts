@@ -132,11 +132,15 @@ contract GovernorBoard {
     //members cannot just create proposals.. only governors can do that.. but if a member gets enough delgated votes he can create a proposal
     //he needs a certain _memberDelegationPercentatge and cannot do it with a org that has fewer than 5 members
     function memberHasDelegation(address who) public view returns (bool) {
-        require(_memberCount > _minMemberCountForDelgations);
+        require(
+            _memberCount > _minMemberCountForDelgations,
+            "Member does not have a delegation"
+        );
         uint256 numOfVotesForDelegatedStatus = ((100 * _memberCount) / 100);
         require(
             (numOfVotesForDelegatedStatus * _memberDelegationPercentatge) >=
-                getVotes(who, block.number - 1)
+                getVotes(who, block.number - 1),
+            "Member does not have a delegation"
         );
         return true;
     }
@@ -166,7 +170,11 @@ contract GovernorBoard {
             "Not enough voting power to create proposal"
         );
 
-        uint256 proposalId = hashProposal(pType, keccak256(bytes(description)));
+        uint256 proposalId = hashProposal(
+            pType,
+            keccak256(bytes(description)),
+            who
+        );
 
         ProposalCore storage proposal = _proposals[proposalId];
 
@@ -229,12 +237,12 @@ contract GovernorBoard {
         return _proposalVotes[proposalId].hasVoted[account];
     }
 
-    function hashProposal(PropType pType, bytes32 descriptionHash)
-        public
-        pure
-        returns (uint256)
-    {
-        return uint256(keccak256(abi.encode(pType, descriptionHash)));
+    function hashProposal(
+        PropType pType,
+        bytes32 descriptionHash,
+        address who
+    ) public pure returns (uint256) {
+        return uint256(keccak256(abi.encode(pType, descriptionHash, who)));
     }
 
     function state(uint256 proposalId) public view returns (ProposalState) {
