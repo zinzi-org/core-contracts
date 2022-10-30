@@ -32,7 +32,10 @@ contract Members is ERC165, IERC721, IERC721Metadata {
     }
 
     function mintToFirst(address who, address boardAddress) public {
-        require(msg.sender == _boardFactoryAddress, "Wrong address");
+        require(
+            msg.sender == _boardFactoryAddress,
+            "Request must come from board factory"
+        );
         _safeMint(who, _count);
 
         address userAddress = address(new Member(address(this), _count));
@@ -41,20 +44,16 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         _count += 1;
     }
 
-    function mintTo(address newMember, address boardAddress) public {
+    function mintTo(address newMember) public {
         GovernorBoardFactory x = GovernorBoardFactory(_boardFactoryAddress);
-        bool isBoard = x.isBoard(boardAddress);
+        bool isBoard = x.isBoard(msg.sender);
         require(isBoard, "Not a valid board address");
-
-        GovernorBoard b = GovernorBoard(boardAddress);
-        bool isGov = b.isGovernor(msg.sender);
-        require(isGov, "Must be a board member");
 
         address userAddress = address(new Member(address(this), _count));
         _tokenIdToUser[_count] = userAddress;
 
         _safeMint(newMember, _count);
-        _tokenToBoard[_count] = boardAddress;
+        _tokenToBoard[_count] = msg.sender;
         _count += 1;
     }
 

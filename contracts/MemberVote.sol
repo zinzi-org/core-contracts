@@ -12,6 +12,8 @@ import "./lib/Math.sol";
 import "./lib/ECDSA.sol";
 import "./lib/EIP712.sol";
 
+import "hardhat/console.sol";
+
 contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
     struct Checkpoint {
         uint32 fromBlock;
@@ -58,6 +60,7 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
     function voteMinterForBoard(address who, uint256 amount) public {
         require(msg.sender == _boardAddress);
         _mint(who, amount);
+        _moveVotingPower(address(0), who, amount);
     }
 
     function name() public view returns (string memory) {
@@ -145,8 +148,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         require(from != address(0), "ERC20: transfer from the zero address");
         require(to != address(0), "ERC20: transfer to the zero address");
 
-        _beforeTokenTransfer(from, to, amount);
-
         uint256 fromBalance = _balances[from];
         require(
             fromBalance >= amount,
@@ -154,8 +155,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
         );
         unchecked {
             _balances[from] = fromBalance - amount;
-            // Overflow not possible: the sum of all balances is capped by totalSupply, and the sum is preserved by
-            // decrementing then incrementing.
             _balances[to] += amount;
         }
 
@@ -166,8 +165,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
 
     function _mint(address account, uint256 amount) internal {
         require(account != address(0), "ERC20: mint to the zero address");
-
-        _beforeTokenTransfer(address(0), account, amount);
 
         _totalSupply += amount;
         unchecked {
@@ -188,8 +185,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
 
     function _burn(address account, uint256 amount) internal {
         require(account != address(0), "ERC20: burn from the zero address");
-
-        _beforeTokenTransfer(account, address(0), amount);
 
         uint256 accountBalance = _balances[account];
         require(accountBalance >= amount, "ERC20: burn amount exceeds balance");
@@ -234,12 +229,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
             }
         }
     }
-
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal {}
 
     /**
      * @dev Get the `pos`-th checkpoint for `account`.
@@ -379,7 +368,6 @@ contract MemberVote is Context, IERC20Metadata, IVotes, EIP712 {
                 );
                 emit DelegateVotesChanged(src, oldWeight, newWeight);
             }
-
             if (dst != address(0)) {
                 (uint256 oldWeight, uint256 newWeight) = _writeCheckpoint(
                     _checkpoints[dst],

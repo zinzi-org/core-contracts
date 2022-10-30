@@ -10,6 +10,12 @@ const memberCompiled = require("../artifacts/contracts/Members.sol/Members.json"
 const memberBoardCompiled = require("../artifacts/contracts/GovernorBoard.sol/GovernorBoard.json");
 const memberVotesCompiled = require("../artifacts/contracts/MemberVote.sol/MemberVote.json");
 
+async function mineNBlocks(n) {
+    for (let index = 0; index < n; index++) {
+        await ethers.provider.send('evm_mine');
+    }
+}
+
 describe("Base Test Setup", () => {
 
     async function fixture() {
@@ -57,7 +63,7 @@ describe("Base Test Setup", () => {
         var balance = await memberContract.balanceOf(owner.address);
         var groupId = await memberContract.getTokenGroup(balance);
         const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
-        await memberContract.mintTo(otherAccount.address, groupId);
+        await memberBoard.addMember(otherAccount.address);
         var obalance = await memberContract.balanceOf(otherAccount.address);
         expect(obalance).to.equal(1);
     });
@@ -68,7 +74,7 @@ describe("Base Test Setup", () => {
         var balance = await memberContract.balanceOf(owner.address);
         var groupId = await memberContract.getTokenGroup(balance);
         const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
-        await memberContract.mintTo(otherAccount.address, groupId);
+        await memberBoard.addMember(otherAccount.address);
         var obalance = await memberContract.balanceOf(otherAccount.address);
         expect(obalance).to.equal(1);
     });
@@ -79,11 +85,21 @@ describe("Base Test Setup", () => {
         var balance = await memberContract.balanceOf(owner.address);
         var groupId = await memberContract.getTokenGroup(balance);
         const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
-        await memberContract.mintTo(otherAccount.address, groupId);
-        const options = { gasLimit : 5000000 };
+        await memberBoard.addMember(otherAccount.address);
+        const options = { gasLimit: 5000000 };
+
+        await hre.network.provider.send("hardhat_mine", ["0x3e8", "0x3c"]);
         await memberBoard.propose("test", 1, options);
+
+
         const memberVotesAddress = memberBoard.getMemberVotesAddress();
         const memberVotes = new ethers.Contract(memberVotesAddress, memberVotesCompiled.abi, owner);
+
+        var newMemberVoteBalance = await memberVotes.balanceOf(otherAccount.address);
+
+        expect(newMemberVoteBalance).to.equal(1);
+
+
     });
 
 

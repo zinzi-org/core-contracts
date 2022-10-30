@@ -9,9 +9,11 @@ import "./lib/SafeCast.sol";
 import "./Members.sol";
 import "./MemberVote.sol";
 
+import "hardhat/console.sol";
+
 contract GovernorBoard {
-    IVotes public immutable _token;
     using Timers for Timers.BlockNumber;
+    using SafeCast for uint256;
 
     enum PropType {
         TEXT_BASED_PROPOSAL,
@@ -52,23 +54,21 @@ contract GovernorBoard {
         Executed
     }
 
-    using SafeCast for uint256;
+    IVotes public immutable _token;
+
     uint256 private _votingDelay;
     uint256 private _votingPeriod;
-
-    address immutable _memberAddress;
-
-    mapping(uint256 => ProposalVote) private _proposalVotes;
-
-    mapping(uint256 => ProposalCore) private _proposals;
+    uint256 public _proposalThreshold = 10;
 
     address[] public _governors;
+    address immutable _membersAddress;
+
+    mapping(uint256 => ProposalVote) private _proposalVotes;
+    mapping(uint256 => ProposalCore) private _proposals;
     mapping(address => uint) public _governorsMapping;
 
     string public _memberMetaURL = "https://www.zini.org/member/";
     string public _metaURL;
-
-    uint256 public _proposalThreshold = 10;
 
     function getTokenURI(uint256 tokenId) public view returns (string memory) {
         return string.concat(_memberMetaURL, Strings.toString(tokenId));
@@ -80,16 +80,22 @@ contract GovernorBoard {
         string memory tokenName,
         string memory tokenSymbol
     ) {
-        _memberAddress = memberAddress;
+        _membersAddress = memberAddress;
         _governors.push(sender);
         _governorsMapping[sender] = _governors.length;
         _token = IVotes(new MemberVote(tokenName, tokenSymbol, address(this)));
-        _token.voteMinterForBoard(sender, _proposalThreshold);
+        _token.voteMinterForBoard(sender, 10);
     }
 
     modifier onlyGovernor() {
         require(_governorsMapping[msg.sender] > 0);
         _;
+    }
+
+    function addMember(address newAddress) public onlyGovernor {
+        Members members = Members(_membersAddress);
+        members.mintTo(newAddress);
+        _token.voteMinterForBoard(newAddress, 1);
     }
 
     function isGovernor(address who) public view returns (bool) {
@@ -164,6 +170,7 @@ contract GovernorBoard {
             !proposalVote.hasVoted[account],
             "GovernorVotingSimple: vote already cast"
         );
+
         proposalVote.hasVoted[account] = true;
 
         if (support == uint8(VoteType.Against)) {
@@ -264,7 +271,7 @@ contract GovernorBoard {
         returns (uint256)
     {
         require(
-            _getVotes(msg.sender, (block.number - 1)) >= _proposalThreshold,
+            getVotes(msg.sender, 2) >= _proposalThreshold,
             "Not enough voting power to create proposal"
         );
 
