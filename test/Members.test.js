@@ -115,7 +115,7 @@ describe("Base Test Setup", () => {
             await memberBoard.addMember(signers[i].address);
         }
 
-        for (var i = 0; i < 2; i++) {
+        for (var i = 0; i < 4; i++) {
             const memberVotes = new ethers.Contract(memberVotesAddress, memberVotesCompiled.abi, signers[i]);
             await memberVotes.delegate(otherAccount.address, options);
         }

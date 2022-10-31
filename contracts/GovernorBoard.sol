@@ -5,6 +5,7 @@ import "./lib/Strings.sol";
 import "./lib/Timers.sol";
 import "./lib/IVotes.sol";
 import "./lib/SafeCast.sol";
+import "./lib/Math.sol";
 
 import "./Members.sol";
 import "./MemberVote.sol";
@@ -14,6 +15,7 @@ import "hardhat/console.sol";
 contract GovernorBoard {
     using Timers for Timers.BlockNumber;
     using SafeCast for uint256;
+    using Math for uint256;
 
     enum PropType {
         TEXT_BASED_PROPOSAL, //external outcome
@@ -133,32 +135,20 @@ contract GovernorBoard {
         _memberToGovWhoApproved[newAddress] = msg.sender;
     }
 
+    function getAllMemberCount() public view returns (uint256) {
+        return (_memberCount + _governors.length);
+    }
+
     //members cannot just create proposals.. only governors can do that.. but if a member gets enough delgated votes he can create a proposal
     //he needs a certain _memberDelegationPercentatge and cannot do it with a org that has fewer than 5 members
     function memberHasDelegation(address who) public view returns (bool) {
-        console.log("Total Member Count");
-        console.log(_memberCount + _governors.length);
-        console.log("Min Member Count");
-        console.log(_minMemberCountForDelgations);
         require(
             _memberCount >= _minMemberCountForDelgations,
             "Member does not have a delegation"
         );
-        uint256 numOfVotesForDelegatedStatus = ((100 * _memberCount) / 100);
-
-        console.log("Number of Votes For Delegated Status");
-        console.log(numOfVotesForDelegatedStatus);
-        console.log("Member Delegation Percentage");
-        console.log(_memberDelegationPercentatge);
-        console.log("---");
-        console.log(
-            ((100 * numOfVotesForDelegatedStatus) /
-                _memberDelegationPercentatge)
-        );
+        uint256 votes = getVotes(who, block.number - 1);
         require(
-            ((100 * numOfVotesForDelegatedStatus) /
-                _memberDelegationPercentatge) >=
-                getVotes(who, block.number - 1),
+            votes.average(_memberCount) >= _memberDelegationPercentatge,
             "Member does not have a delegation"
         );
         return true;
