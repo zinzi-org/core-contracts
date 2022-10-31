@@ -10,7 +10,7 @@ const memberCompiled = require("../artifacts/contracts/Members.sol/Members.json"
 const memberBoardCompiled = require("../artifacts/contracts/GovernorBoard.sol/GovernorBoard.json");
 const memberVotesCompiled = require("../artifacts/contracts/MemberVote.sol/MemberVote.json");
 
-describe("Base Test Setup", () => {
+describe("Base Test Cases", () => {
 
     async function fixture() {
         const [owner, otherAccount] = await ethers.getSigners();
@@ -19,6 +19,34 @@ describe("Base Test Setup", () => {
         var memberAddress = await factory.membersAddress();
         const memberContract = new ethers.Contract(memberAddress, memberCompiled.abi, owner);
         return { factory, memberContract, owner, otherAccount };
+    }
+
+    async function proposalFixture() {
+        const [owner, otherAccount] = await ethers.getSigners();
+        const BoardFactory = await ethers.getContractFactory("GovernorBoardFactory");
+        const factory = await BoardFactory.deploy();
+        var memberAddress = await factory.membersAddress();
+        const memberContract = new ethers.Contract(memberAddress, memberCompiled.abi, owner);
+
+        await factory.create("ZinziDAO", "ZZ");
+        var balance = await memberContract.balanceOf(owner.address);
+        var groupId = await memberContract.getTokenGroup(balance);
+        const memberBoard = new ethers.Contract(groupId, memberBoardCompiled.abi, owner);
+
+        await memberBoard.addMember(otherAccount.address);
+        const signers = [];
+
+        for (let i = 0; i < 15; i++) {
+            wallet = ethers.Wallet.createRandom();
+            wallet = wallet.connect(ethers.provider);
+            await owner.sendTransaction({ to: wallet.address, value: ethers.utils.parseEther(".5") });
+            signers.push(wallet);
+            memberBoard.addMember(wallet.address);
+        }
+
+
+        return { memberContract, memberBoard, owner, otherAccount, signers, memberVotesAddress };
+
     }
 
     it('has board member factory with member board', async () => {
@@ -124,5 +152,21 @@ describe("Base Test Setup", () => {
         await memberBoardOther.propose("test text", 0, ethers.constants.AddressZero, options);
     });
 
+    it("members can vote on a proposal", async () => {
+        const { memberContract, memberBoard, owner, otherAccount, signers, memberVotesAddress } = await loadFixture(proposalFixture);
+
+        for (var i = 0; i < 15; i++) {
+            await memberBoard.addMember(signers[i].address);
+        }
+
+        for (var i = 0; i < 5; i++) {
+            const memberVotes = new ethers.Contract(memberVotesAddress, memberVotesCompiled.abi, signers[i]);
+            await memberVotes.delegate(otherAccount.address, options);
+        }
+
+
+
+
+    });
 
 });

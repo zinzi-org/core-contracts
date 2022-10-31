@@ -66,7 +66,7 @@ contract GovernorBoard {
 
     uint256 private _votingDelay = 0;
     uint256 private _votingPeriod = 1000;
-    uint256 private _memberDelegationPercentatge = 10;
+    uint256 private _delegatedProposalThreashold = 10;
     uint256 private _minMemberCountForDelgations = 5;
 
     mapping(address => address) public _memberToGovWhoApproved;
@@ -120,7 +120,7 @@ contract GovernorBoard {
         _governors.push(newGov);
         _governorsMapping[newGov] = _governors.length;
 
-        //if is existing member then remove him from member count since he is now part of the governor weight metric
+        //if is existing member then remove him from member count since he is now part of the governor count
         if (_memberToGovWhoApproved[newGov] != address(0)) {
             _memberCount -= 1;
             _memberToGovWhoApproved[newGov] = address(0);
@@ -135,7 +135,7 @@ contract GovernorBoard {
         _memberToGovWhoApproved[newAddress] = msg.sender;
     }
 
-    function getAllMemberCount() public view returns (uint256) {
+    function getTotalMembers() public view returns (uint256) {
         return (_memberCount + _governors.length);
     }
 
@@ -143,12 +143,12 @@ contract GovernorBoard {
     //he needs a certain _memberDelegationPercentatge and cannot do it with a org that has fewer than 5 members
     function memberHasDelegation(address who) public view returns (bool) {
         require(
-            _memberCount >= _minMemberCountForDelgations,
+            _memberCount >= _delegatedProposalThreashold,
             "Member does not have a delegation"
         );
         uint256 votes = getVotes(who, block.number - 1);
         require(
-            votes.average(_memberCount) >= _memberDelegationPercentatge,
+            votes.average(_memberCount) >= _delegatedProposalThreashold,
             "Member does not have a delegation"
         );
         return true;
