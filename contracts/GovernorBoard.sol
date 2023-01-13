@@ -13,6 +13,7 @@ import "./MemberVote.sol";
 import "hardhat/console.sol";
 
 contract GovernorBoard {
+    event Proposal(uint256 proposalId);
     using Timers for Timers.BlockNumber;
     using SafeCast for uint256;
     using Math for uint256;
@@ -154,18 +155,16 @@ contract GovernorBoard {
         return true;
     }
 
-    function getGovWhoApprovedMember(address who)
-        public
-        view
-        returns (address)
-    {
+    function getGovWhoApprovedMember(
+        address who
+    ) public view returns (address) {
         return _memberToGovWhoApproved[who];
     }
 
-    function castVote(uint256 proposalId, uint8 support)
-        public
-        returns (uint256)
-    {
+    function castVote(
+        uint256 proposalId,
+        uint8 support
+    ) public returns (uint256) {
         return _castVote(proposalId, msg.sender, support);
     }
 
@@ -173,7 +172,7 @@ contract GovernorBoard {
         string memory description,
         PropType pType,
         address who
-    ) public returns (uint256) {
+    ) public {
         require(
             isGovernor(msg.sender) || memberHasDelegation(msg.sender),
             "Not enough voting power to create proposal"
@@ -206,7 +205,7 @@ contract GovernorBoard {
         proposal.voteStart.setDeadline(snapshot);
         proposal.voteEnd.setDeadline(deadline);
 
-        return proposalId;
+        emit Proposal(proposalId);
     }
 
     function isGovernor(address who) public view returns (bool) {
@@ -221,14 +220,12 @@ contract GovernorBoard {
         return address(_token);
     }
 
-    function proposalVotes(uint256 proposalId)
+    function proposalVotes(
+        uint256 proposalId
+    )
         public
         view
-        returns (
-            uint256 againstVotes,
-            uint256 forVotes,
-            uint256 abstainVotes
-        )
+        returns (uint256 againstVotes, uint256 forVotes, uint256 abstainVotes)
     {
         ProposalVote storage proposalVote = _proposalVotes[proposalId];
         return (
@@ -238,11 +235,10 @@ contract GovernorBoard {
         );
     }
 
-    function hasVoted(uint256 proposalId, address account)
-        public
-        view
-        returns (bool)
-    {
+    function hasVoted(
+        uint256 proposalId,
+        address account
+    ) public view returns (bool) {
         return _proposalVotes[proposalId].hasVoted[account];
     }
 
@@ -288,19 +284,15 @@ contract GovernorBoard {
         }
     }
 
-    function proposalSnapshot(uint256 proposalId)
-        public
-        view
-        returns (uint256)
-    {
+    function proposalSnapshot(
+        uint256 proposalId
+    ) public view returns (uint256) {
         return _proposals[proposalId].voteStart.getDeadline();
     }
 
-    function proposalDeadline(uint256 proposalId)
-        public
-        view
-        returns (uint256)
-    {
+    function proposalDeadline(
+        uint256 proposalId
+    ) public view returns (uint256) {
         return _proposals[proposalId].voteEnd.getDeadline();
     }
 
@@ -312,11 +304,10 @@ contract GovernorBoard {
         return _votingPeriod;
     }
 
-    function getVotes(address account, uint256 blockNumber)
-        public
-        view
-        returns (uint256)
-    {
+    function getVotes(
+        address account,
+        uint256 blockNumber
+    ) public view returns (uint256) {
         return _getVotes(account, blockNumber);
     }
 
@@ -332,6 +323,7 @@ contract GovernorBoard {
         );
 
         uint256 weight = _getVotes(account, proposal.voteStart.getDeadline());
+        require(weight > 0, "Weight must be greater than zero to cast vote");
         _countVote(proposalId, account, support, weight);
 
         return weight;
@@ -369,11 +361,10 @@ contract GovernorBoard {
         }
     }
 
-    function _getVotes(address account, uint256 blockNumber)
-        internal
-        view
-        returns (uint256)
-    {
+    function _getVotes(
+        address account,
+        uint256 blockNumber
+    ) internal view returns (uint256) {
         return _token.getPastVotes(account, blockNumber);
     }
 }

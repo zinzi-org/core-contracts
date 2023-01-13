@@ -9,7 +9,6 @@ import "./GovernorBoardFactory.sol";
 import "./GovernorBoard.sol";
 import "./lib/Strings.sol";
 import "./lib/ERC165.sol";
-import "./Member.sol";
 
 contract Members is ERC165, IERC721, IERC721Metadata {
     using Strings for uint256;
@@ -17,9 +16,16 @@ contract Members is ERC165, IERC721, IERC721Metadata {
     string public name = "Member";
     string public symbol = "MM";
 
-    mapping(uint256 => address) private _tokenToBoard;
     mapping(uint256 => address) private _owners;
-    mapping(uint256 => address) private _tokenIdToUser;
+
+    mapping(uint256 => address) private _tokenIndexToBoardAddress;
+
+    mapping(address => mapping(address => bool)) private _memberToGroup;
+
+    mapping(address => uint256[]) private _memberToTokens;
+    mapping(uint256 => address) private _tokenIdToMember;
+    mapping(address => uint256) private _memberToTokenId;
+
     mapping(address => uint256) private _balances;
     mapping(uint256 => address) private _tokenApprovals;
     mapping(address => mapping(address => bool)) private _operatorApprovals;
@@ -28,6 +34,7 @@ contract Members is ERC165, IERC721, IERC721Metadata {
     address public _boardFactoryAddress;
 
     constructor() {
+        _tokenIdToMember[0] = address(0);
         _boardFactoryAddress = msg.sender;
     }
 
@@ -37,25 +44,29 @@ contract Members is ERC165, IERC721, IERC721Metadata {
             "Request must come from board factory"
         );
         _safeMint(who, _count);
-
-        address userAddress = address(new Member(address(this), _count));
-        _tokenIdToUser[_count] = userAddress;
-        _tokenToBoard[_count] = boardAddress;
+        _tokenIdToMember[_count] = who;
+        _tokenIndexToBoardAddress[_count] = boardAddress;
+        _memberToTokenId[who] = _count;
+        _memberToTokens[who].push(_count);
+        _memberToGroup[who][boardAddress] = true;
         _count += 1;
     }
 
+    //Can only be called by governor board contract
     function mintTo(address newMember) public {
+        require(_memberToGroup[newMember][msg.sender] == false, "Already member of group");
         GovernorBoardFactory x = GovernorBoardFactory(_boardFactoryAddress);
         bool isBoard = x.isBoard(msg.sender);
         require(isBoard, "Not a valid board address");
-
-        address userAddress = address(new Member(address(this), _count));
-        _tokenIdToUser[_count] = userAddress;
-
+        _tokenIdToMember[_count] = newMember;
+        _memberToTokenId[newMember] = _count;
         _safeMint(newMember, _count);
-        _tokenToBoard[_count] = msg.sender;
+        _tokenIndexToBoardAddress[_count] = msg.sender;
+         _memberToTokens[newMember].push(_count);
+        _memberToGroup[newMember][msg.sender] = true;
         _count += 1;
     }
+
 
     function supportsInterface(bytes4 interfaceId)
         public
@@ -84,6 +95,14 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         return _balances[owner_];
     }
 
+    function getBoards(address who) public view returns (uint256[] memory){
+        return _memberToTokens[who];
+    }
+
+    function getBoardForToken(uint256 tokenId) public view returns (address) {
+        return _tokenIndexToBoardAddress[tokenId];
+    }
+
     function ownerOf(uint256 tokenId)
         public
         view
@@ -104,13 +123,9 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         returns (string memory)
     {
         _requireMinted(tokenId);
-        address memberBoardAddress = _tokenToBoard[tokenId];
+        address memberBoardAddress = _tokenIndexToBoardAddress[tokenId];
         GovernorBoard memberBoardInstance = GovernorBoard(memberBoardAddress);
         return memberBoardInstance.getTokenURI(tokenId);
-    }
-
-    function getTokenGroup(uint256 tokenId) public view returns (address) {
-        return _tokenToBoard[tokenId];
     }
 
     function approve(address to, uint256 tokenId) public virtual override {
@@ -262,6 +277,25 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         _balances[from] -= 1;
         _balances[to] += 1;
         _owners[tokenId] = to;
+
+        _memberToTokenId[to] = _memberToTokenId[from];
+        _memberToTokenId[from] = 0;
+
+        _tokenIdToMember[tokenId] = to;
+
+        _memberToTokens[to].push(tokenId);
+
+        address boardAddress = getBoardForToken(tokenId);
+
+        _memberToGroup[from][boardAddress] = false;
+        _memberToGroup[to][boardAddress] = true;
+
+        for(uint256 i = 0; i < _memberToTokens[from].length; i++){
+            if(_memberToTokens[from][i] == tokenId){
+                _memberToTokens[from][i] = _memberToTokens[from][_memberToTokens[from].length - 1];
+                _memberToTokens[from].pop();
+            }
+        }
 
         emit Transfer(from, to, tokenId);
     }

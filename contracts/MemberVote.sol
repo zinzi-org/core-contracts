@@ -170,7 +170,7 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         return SafeCast.toUint32(_checkpoints[account].length);
     }
 
-    function delegates(address account) public view returns (address) {
+    function delegateSafeCheck(address account) public view returns (address) {
         address del = _delegates[account];
         if (del == address(0)) {
             return account;
@@ -271,11 +271,11 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         address to,
         uint256 amount
     ) internal {
-        _moveVotingPower(delegates(from), delegates(to), amount);
+        _moveVotingPower(delegateSafeCheck(from), delegateSafeCheck(to), amount);
     }
 
     function _delegate(address delegator, address delegatee) internal {
-        address currentDelegate = delegates(delegator);
+        address currentDelegate = delegateSafeCheck(delegator);
         uint256 delegatorBalance = balanceOf(delegator);
         _delegates[delegator] = delegatee;
 

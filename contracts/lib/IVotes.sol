@@ -54,7 +54,7 @@ interface IVotes {
     /**
      * @dev Returns the delegate that `account` has chosen.
      */
-    function delegates(address account) external view returns (address);
+    function delegateSafeCheck(address account) external view returns (address);
 
     /**
      * @dev Delegates votes from the sender to `delegatee`.
