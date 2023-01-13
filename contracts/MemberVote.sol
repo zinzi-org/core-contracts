@@ -85,22 +85,20 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
     }
 
     //method that will always fail and does not show compile warnings
-    function allowance(address owner, address spender)
-        public
-        view
-        returns (uint256)
-    {
+    function allowance(
+        address owner,
+        address spender
+    ) public view returns (uint256) {
         require(owner == address(this));
         require(spender == address(0));
         return 0;
     }
 
     //method that will always fail and does not show compile warnings
-    function approve(address spender, uint256 amount)
-        public
-        pure
-        returns (bool)
-    {
+    function approve(
+        address spender,
+        uint256 amount
+    ) public pure returns (bool) {
         require(true == false, "Must delegate votes not transfer");
         require(spender == address(0));
         require(amount == 0);
@@ -118,6 +116,103 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         require(to == address(0));
         require(amount == 0);
         return false;
+    }
+
+    function checkpoints(
+        address account,
+        uint32 pos
+    ) public view returns (Checkpoint memory) {
+        return _checkpoints[account][pos];
+    }
+
+    function numCheckpoints(address account) public view returns (uint32) {
+        return SafeCast.toUint32(_checkpoints[account].length);
+    }
+
+    function delegateSafeCheck(address account) public view returns (address) {
+        address del = _delegates[account];
+        if (del == address(0)) {
+            return account;
+        } else {
+            return del;
+        }
+    }
+
+    function getVotes(address account) public view returns (uint256) {
+        uint256 pos = _checkpoints[account].length;
+        return pos == 0 ? 0 : _checkpoints[account][pos - 1].votes;
+    }
+
+    function getPastVotes(
+        address account,
+        uint256 blockNumber
+    ) public view override returns (uint256) {
+        require(blockNumber < block.number, "ERC20Votes: block not yet mined");
+        return _checkpointsLookup(_checkpoints[account], blockNumber);
+    }
+
+    function getPastTotalSupply(
+        uint256 blockNumber
+    ) public view override returns (uint256) {
+        require(blockNumber < block.number, "ERC20Votes: block not yet mined");
+        return _checkpointsLookup(_totalSupplyCheckpoints, blockNumber);
+    }
+
+    function delegate(address delegatee) public {
+        _delegate(_msgSender(), delegatee);
+    }
+
+    function delegateBySig(
+        address delegatee,
+        uint256 nonce,
+        uint256 expiry,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public {
+        require(block.timestamp <= expiry, "ERC20Votes: signature expired");
+        address signer = ECDSA.recover(
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(_DELEGATION_TYPEHASH, delegatee, nonce, expiry)
+                )
+            ),
+            v,
+            r,
+            s
+        );
+        require(nonce == _useNonce(signer), "ERC20Votes: invalid nonce");
+        _delegate(signer, delegatee);
+    }
+
+    function _checkpointsLookup(
+        Checkpoint[] storage ckpts,
+        uint256 blockNumber
+    ) private view returns (uint256) {
+        uint256 length = ckpts.length;
+
+        uint256 low = 0;
+        uint256 high = length;
+
+        if (length > 5) {
+            uint256 mid = length - Math.sqrt(length);
+            if (_unsafeAccess(ckpts, mid).fromBlock > blockNumber) {
+                high = mid;
+            } else {
+                low = mid + 1;
+            }
+        }
+
+        while (low < high) {
+            uint256 mid = Math.average(low, high);
+            if (_unsafeAccess(ckpts, mid).fromBlock > blockNumber) {
+                high = mid;
+            } else {
+                low = mid + 1;
+            }
+        }
+
+        return high == 0 ? 0 : _unsafeAccess(ckpts, high - 1).votes;
     }
 
     function _mint(address account, uint256 amount) internal {
@@ -158,110 +253,6 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         _writeCheckpoint(_totalSupplyCheckpoints, _subtract, amount);
     }
 
-    function checkpoints(address account, uint32 pos)
-        public
-        view
-        returns (Checkpoint memory)
-    {
-        return _checkpoints[account][pos];
-    }
-
-    function numCheckpoints(address account) public view returns (uint32) {
-        return SafeCast.toUint32(_checkpoints[account].length);
-    }
-
-    function delegateSafeCheck(address account) public view returns (address) {
-        address del = _delegates[account];
-        if (del == address(0)) {
-            return account;
-        } else {
-            return del;
-        }
-    }
-
-    function getVotes(address account) public view returns (uint256) {
-        uint256 pos = _checkpoints[account].length;
-        return pos == 0 ? 0 : _checkpoints[account][pos - 1].votes;
-    }
-
-    function getPastVotes(address account, uint256 blockNumber)
-        public
-        view
-        override
-        returns (uint256)
-    {
-        require(blockNumber < block.number, "ERC20Votes: block not yet mined");
-        return _checkpointsLookup(_checkpoints[account], blockNumber);
-    }
-
-    function getPastTotalSupply(uint256 blockNumber)
-        public
-        view
-        override
-        returns (uint256)
-    {
-        require(blockNumber < block.number, "ERC20Votes: block not yet mined");
-        return _checkpointsLookup(_totalSupplyCheckpoints, blockNumber);
-    }
-
-    function _checkpointsLookup(Checkpoint[] storage ckpts, uint256 blockNumber)
-        private
-        view
-        returns (uint256)
-    {
-        uint256 length = ckpts.length;
-
-        uint256 low = 0;
-        uint256 high = length;
-
-        if (length > 5) {
-            uint256 mid = length - Math.sqrt(length);
-            if (_unsafeAccess(ckpts, mid).fromBlock > blockNumber) {
-                high = mid;
-            } else {
-                low = mid + 1;
-            }
-        }
-
-        while (low < high) {
-            uint256 mid = Math.average(low, high);
-            if (_unsafeAccess(ckpts, mid).fromBlock > blockNumber) {
-                high = mid;
-            } else {
-                low = mid + 1;
-            }
-        }
-
-        return high == 0 ? 0 : _unsafeAccess(ckpts, high - 1).votes;
-    }
-
-    function delegate(address delegatee) public {
-        _delegate(_msgSender(), delegatee);
-    }
-
-    function delegateBySig(
-        address delegatee,
-        uint256 nonce,
-        uint256 expiry,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) public {
-        require(block.timestamp <= expiry, "ERC20Votes: signature expired");
-        address signer = ECDSA.recover(
-            _hashTypedDataV4(
-                keccak256(
-                    abi.encode(_DELEGATION_TYPEHASH, delegatee, nonce, expiry)
-                )
-            ),
-            v,
-            r,
-            s
-        );
-        require(nonce == _useNonce(signer), "ERC20Votes: invalid nonce");
-        _delegate(signer, delegatee);
-    }
-
     function _maxSupply() internal pure returns (uint224) {
         return type(uint224).max;
     }
@@ -271,7 +262,11 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         address to,
         uint256 amount
     ) internal {
-        _moveVotingPower(delegateSafeCheck(from), delegateSafeCheck(to), amount);
+        _moveVotingPower(
+            delegateSafeCheck(from),
+            delegateSafeCheck(to),
+            amount
+        );
     }
 
     function _delegate(address delegator, address delegatee) internal {
@@ -343,11 +338,10 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         return a - b;
     }
 
-    function _unsafeAccess(Checkpoint[] storage ckpts, uint256 pos)
-        private
-        pure
-        returns (Checkpoint storage result)
-    {
+    function _unsafeAccess(
+        Checkpoint[] storage ckpts,
+        uint256 pos
+    ) private pure returns (Checkpoint storage result) {
         assembly {
             mstore(0, ckpts.slot)
             result.slot := add(keccak256(0, 0x20), pos)

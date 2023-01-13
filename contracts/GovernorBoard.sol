@@ -70,6 +70,8 @@ contract GovernorBoard {
     uint256 private _delegatedProposalThreashold = 10;
     uint256 private _minMemberCountForDelgations = 5;
 
+    uint256 private _proposalFee = 0;
+
     mapping(address => address) public _memberToGovWhoApproved;
     uint256 private _memberCount;
 
@@ -309,6 +311,10 @@ contract GovernorBoard {
         uint256 blockNumber
     ) public view returns (uint256) {
         return _getVotes(account, blockNumber);
+    }
+
+    function setProposalFee(uint256 newFee) public onlyGovernor {
+        _proposalFee = newFee;
     }
 
     function _castVote(

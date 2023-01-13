@@ -205,6 +205,8 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         _safeTransfer(from, to, tokenId, data);
     }
 
+    // - private functions
+
     // =======================================================================================================================================
 
     function _safeTransfer(
