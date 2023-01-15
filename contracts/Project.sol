@@ -21,37 +21,21 @@ contract Project is ERC165, IERC721, IERC721Metadata {
     using SafeCast for uint256;
     using Math for uint256;
 
-    struct ProposalCore {
+    struct ProjectCore {
+        uint256 projectTokenId;
+        uint256 projectHash;
         Timers.BlockNumber voteStart;
         Timers.BlockNumber voteEnd;
         bool executed;
         bool canceled;
+        mapping(address => bool) hasVoted;
+        ProposalCore[] proposals;
+    }
+
+    struct ProposalCore {
         uint256 memberTokenId;
         uint256 proposalHash;
-    }
-
-    struct ProposalVote {
-        uint256 againstVotes;
-        uint256 forVotes;
-        uint256 abstainVotes;
-        mapping(address => bool) hasVoted;
-    }
-
-    enum VoteType {
-        Against,
-        For,
-        Abstain
-    }
-
-    enum ProposalState {
-        Pending,
-        Active,
-        Canceled,
-        Defeated,
-        Succeeded,
-        Queued,
-        Expired,
-        Executed
+        uint256 votes;
     }
 
     enum Funding {
@@ -64,7 +48,7 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         AGILE //iterative
     }
 
-    enum State {
+    enum ProjectState {
         PENDING,
         ASSIGNED,
         CANCELED,
@@ -87,12 +71,8 @@ contract Project is ERC165, IERC721, IERC721Metadata {
     mapping(address => uint256) private _balances;
     mapping(uint256 => address) private _tokenApprovals;
     mapping(address => mapping(address => bool)) private _operatorApprovals;
-    mapping(uint256 => uint256) private _tokenIdToHash;
 
-    mapping(uint256 => State) private _tokenIdtoState;
-
-    mapping(uint256 => ProposalVote) private _proposalVotes;
-    mapping(uint256 => ProposalCore[]) private _projectIdToProposals;
+    mapping(uint256 => ProjectCore) private _projects;
 
     address private _membersAddress;
 
@@ -114,19 +94,43 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         _;
     }
 
-    function mintTo(uint256 projectHash) public {
+    ///PROJECT NFT MINT TO STAKEHOLDER
+
+    function mintProject(
+        string memory nameP,
+        string memory summary,
+        Workflow flow,
+        Funding funding
+    ) public {
         _safeMint(msg.sender, _count);
-        _tokenIdToHash[_count] = projectHash;
+        uint64 snapshot = block.number.toUint64() + votingDelay().toUint64();
+        uint64 deadline = snapshot + votingPeriod().toUint64();
+        ProjectCore storage core = _projects[_count];
+        core.projectHash = generateProjectHash(nameP, summary, flow, funding);
+        core.projectTokenId = _count;
+        core.voteStart.setDeadline(snapshot);
+        core.voteEnd.setDeadline(deadline);
         _count += 1;
     }
 
-    function updateHash(uint256 tokenId, uint256 projectHash) public {
+    function updateProjectHash(
+        uint256 tokenId,
+        string memory nameP,
+        string memory summary,
+        Workflow flow,
+        Funding funding
+    ) public {
         address owner = ownerOf(tokenId);
         require(msg.sender == owner, "Only owner of project token can ");
-        _tokenIdToHash[tokenId] = projectHash;
+        _projects[tokenId].projectHash = generateProjectHash(
+            nameP,
+            summary,
+            flow,
+            funding
+        );
     }
 
-    function hashProject(
+    function generateProjectHash(
         string memory nameP,
         string memory summary,
         Workflow flow,
@@ -135,101 +139,90 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         return uint256(keccak256(abi.encode(nameP, summary, flow, funding)));
     }
 
-    function propose(
-        uint256 memberTokenId,
-        uint256 projectTokenId,
-        uint256 proposalHash
+    ///MEMBER NFT Proposals for Project Ownership which will be approved via stakeholders.
+    // ---------------------------------------------
+
+    ///Only members can submit proposals.. they must provide a member Token Id and a proposal Hash to a specific Project Token.
+    ///Stakeholders can vote on bids from members on their projects.
+
+    function createProposal(
+        uint256 memberId,
+        uint256 projectId,
+        string memory summary
     ) public onlyMember {
-        uint64 snapshot = block.number.toUint64() + votingDelay().toUint64();
-        uint64 deadline = snapshot + votingPeriod().toUint64();
         ProposalCore memory core;
-        core.memberTokenId = memberTokenId;
-        core.proposalHash = proposalHash;
-        uint256 length = _projectIdToProposals[projectTokenId].length;
-        _projectIdToProposals[projectTokenId].push(core);
-        _projectIdToProposals[projectTokenId][length].voteStart.setDeadline(
-            snapshot
-        );
-        _projectIdToProposals[projectTokenId][length].voteEnd.setDeadline(
-            deadline
-        );
-        emit Proposal(projectTokenId, memberTokenId);
+        core.memberTokenId = memberId;
+        core.proposalHash = generateProposalHash(summary, projectId, memberId);
+        _projects[projectId].proposals.push(core);
+        emit Proposal(projectId, memberId);
     }
 
-    function castVote(uint256 proposalId) public {}
+    function castVote(uint256 projectTokenId, uint256) public {}
 
     function proposalVotes(uint256 proposalId) public {}
 
     function hasVoted(
-        uint256 proposalId,
+        uint256 projectTokenId,
         address account
     ) public view returns (bool) {
-        return _proposalVotes[proposalId].hasVoted[account];
+        return _projects[projectTokenId].hasVoted[account];
     }
 
-    function hashProposal(
-        string memory description
+    function generateProposalHash(
+        string memory projectSummary,
+        uint256 projectTokenId,
+        uint256 memberTokenId
     ) public pure returns (uint256) {
-        return uint256(keccak256(abi.encode(description)));
+        return
+            uint256(
+                keccak256(
+                    abi.encode(projectSummary, projectTokenId, memberTokenId)
+                )
+            );
     }
 
-    function state(
-        uint256 proposalId,
-        uint256 proposalIndexId
-    ) public view returns (ProposalState) {
-        ProposalCore storage proposal = _projectIdToProposals[proposalId][
-            proposalIndexId
-        ];
+    function projectState(
+        uint256 projectTokenId
+    ) public view returns (ProjectState) {
+        ProjectCore storage project = _projects[projectTokenId];
 
-        if (proposal.executed) {
-            return ProposalState.Executed;
+        if (project.executed) {
+            return ProjectState.COMPLETED;
         }
 
-        if (proposal.canceled) {
-            return ProposalState.Canceled;
+        if (project.canceled) {
+            return ProjectState.CANCELED;
         }
 
-        uint256 snapshot = proposalSnapshot(proposalId, proposalIndexId);
+        uint256 snapshot = proposalSnapshot(projectTokenId);
 
         if (snapshot == 0) {
             revert("Governor: unknown proposal id");
         }
 
         if (snapshot >= block.number) {
-            return ProposalState.Pending;
+            return ProjectState.PENDING;
         }
 
-        uint256 deadline = proposalDeadline(proposalId, proposalIndexId);
+        uint256 deadline = proposalDeadline(projectTokenId);
 
         if (deadline >= block.number) {
-            return ProposalState.Active;
+            return ProjectState.ASSIGNED;
         }
 
-        if (_voteSucceeded(proposalId)) {
-            return ProposalState.Succeeded;
-        } else {
-            return ProposalState.Defeated;
-        }
+        return ProjectState.ABANDONED;
     }
 
     function proposalSnapshot(
-        uint256 proposalId,
-        uint256 proposalIndex
+        uint256 projectTokenId
     ) public view returns (uint256) {
-        return
-            _projectIdToProposals[proposalId][proposalIndex]
-                .voteStart
-                .getDeadline();
+        return _projects[projectTokenId].voteStart.getDeadline();
     }
 
     function proposalDeadline(
-        uint256 proposalId,
-        uint256 proposalIndex
+        uint256 projectTokenId
     ) public view returns (uint256) {
-        return
-            _projectIdToProposals[proposalId][proposalIndex]
-                .voteEnd
-                .getDeadline();
+        return _projects[projectTokenId].voteEnd.getDeadline();
     }
 
     function votingDelay() public view returns (uint256) {
@@ -373,12 +366,6 @@ contract Project is ERC165, IERC721, IERC721Metadata {
             "ERC721: caller is not token owner nor approved"
         );
         _safeTransfer(from, to, tokenId, data);
-    }
-
-    function _voteSucceeded(uint256 proposalId) internal view returns (bool) {
-        ProposalVote storage proposalVote = _proposalVotes[proposalId];
-
-        return proposalVote.forVotes > proposalVote.againstVotes;
     }
 
     function _isApprovedOrOwner(
