@@ -63,7 +63,7 @@ contract GovernorBoard {
         Executed
     }
 
-    IVotes public immutable _token;
+    IVotes private immutable _token;
 
     uint256 private _votingDelay = 0;
     uint256 private _votingPeriod = 1000;
@@ -246,10 +246,10 @@ contract GovernorBoard {
 
     function hashProposal(
         PropType pType,
-        bytes32 descriptionHash,
+        bytes32 description,
         address who
     ) public pure returns (uint256) {
-        return uint256(keccak256(abi.encode(pType, descriptionHash, who)));
+        return uint256(keccak256(abi.encode(pType, description, who)));
     }
 
     function state(uint256 proposalId) public view returns (ProposalState) {

@@ -11,13 +11,48 @@ import "./lib/ERC165.sol";
 import "./lib/Timers.sol";
 import "./lib/SafeCast.sol";
 import "./lib/Math.sol";
+import "./Members.sol";
 
 contract Project is ERC165, IERC721, IERC721Metadata {
-    event ProjectCreated();
+    event ProjectCreated(uint256 projectTokenId);
+    event Proposal(uint256 projectTokenId, uint256 memberTokenId);
 
     using Timers for Timers.BlockNumber;
     using SafeCast for uint256;
     using Math for uint256;
+
+    struct ProposalCore {
+        Timers.BlockNumber voteStart;
+        Timers.BlockNumber voteEnd;
+        bool executed;
+        bool canceled;
+        uint256 memberTokenId;
+        uint256 proposalHash;
+    }
+
+    struct ProposalVote {
+        uint256 againstVotes;
+        uint256 forVotes;
+        uint256 abstainVotes;
+        mapping(address => bool) hasVoted;
+    }
+
+    enum VoteType {
+        Against,
+        For,
+        Abstain
+    }
+
+    enum ProposalState {
+        Pending,
+        Active,
+        Canceled,
+        Defeated,
+        Succeeded,
+        Queued,
+        Expired,
+        Executed
+    }
 
     enum Funding {
         PRIVATE,
@@ -31,8 +66,6 @@ contract Project is ERC165, IERC721, IERC721Metadata {
 
     enum State {
         PENDING,
-        FUNDING,
-        FUNDED,
         ASSIGNED,
         CANCELED,
         COMPLETED,
@@ -46,6 +79,8 @@ contract Project is ERC165, IERC721, IERC721Metadata {
 
     uint256 public _count = 0;
 
+    mapping(uint256 => uint256) tokenIdToProposalFee;
+
     mapping(uint256 => address) private _owners;
     mapping(uint256 => address) private _memberAssignment;
 
@@ -54,10 +89,29 @@ contract Project is ERC165, IERC721, IERC721Metadata {
     mapping(address => mapping(address => bool)) private _operatorApprovals;
     mapping(uint256 => uint256) private _tokenIdToHash;
 
+    mapping(uint256 => State) private _tokenIdtoState;
+
+    mapping(uint256 => ProposalVote) private _proposalVotes;
+    mapping(uint256 => ProposalCore[]) private _projectIdToProposals;
+
     address private _membersAddress;
+
+    uint256 private _votingDelay = 0;
+    uint256 private _votingPeriod = 1000;
 
     constructor(address membersAddress) {
         _membersAddress = membersAddress;
+    }
+
+    modifier onlyMember() {
+        Members members = Members(_membersAddress);
+        require(members.balanceOf(msg.sender) > 0, "Not a member");
+        _;
+    }
+
+    modifier onlyOwner(uint256 tokenId) {
+        require(ownerOf(tokenId) == msg.sender, "Not the token owner");
+        _;
     }
 
     function mintTo(uint256 projectHash) public {
@@ -72,7 +126,7 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         _tokenIdToHash[tokenId] = projectHash;
     }
 
-    function generateHash(
+    function hashProject(
         string memory nameP,
         string memory summary,
         Workflow flow,
@@ -81,19 +135,140 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         return uint256(keccak256(abi.encode(nameP, summary, flow, funding)));
     }
 
+    function propose(
+        uint256 memberTokenId,
+        uint256 projectTokenId,
+        uint256 proposalHash
+    ) public onlyMember {
+        uint64 snapshot = block.number.toUint64() + votingDelay().toUint64();
+        uint64 deadline = snapshot + votingPeriod().toUint64();
+        ProposalCore memory core;
+        core.memberTokenId = memberTokenId;
+        core.proposalHash = proposalHash;
+        uint256 length = _projectIdToProposals[projectTokenId].length;
+        _projectIdToProposals[projectTokenId].push(core);
+        _projectIdToProposals[projectTokenId][length].voteStart.setDeadline(
+            snapshot
+        );
+        _projectIdToProposals[projectTokenId][length].voteEnd.setDeadline(
+            deadline
+        );
+        emit Proposal(projectTokenId, memberTokenId);
+    }
+
+    function castVote(uint256 proposalId) public {}
+
+    function proposalVotes(uint256 proposalId) public {}
+
+    function hasVoted(
+        uint256 proposalId,
+        address account
+    ) public view returns (bool) {
+        return _proposalVotes[proposalId].hasVoted[account];
+    }
+
+    function hashProposal(
+        string memory description
+    ) public pure returns (uint256) {
+        return uint256(keccak256(abi.encode(description)));
+    }
+
+    function state(
+        uint256 proposalId,
+        uint256 proposalIndexId
+    ) public view returns (ProposalState) {
+        ProposalCore storage proposal = _projectIdToProposals[proposalId][
+            proposalIndexId
+        ];
+
+        if (proposal.executed) {
+            return ProposalState.Executed;
+        }
+
+        if (proposal.canceled) {
+            return ProposalState.Canceled;
+        }
+
+        uint256 snapshot = proposalSnapshot(proposalId, proposalIndexId);
+
+        if (snapshot == 0) {
+            revert("Governor: unknown proposal id");
+        }
+
+        if (snapshot >= block.number) {
+            return ProposalState.Pending;
+        }
+
+        uint256 deadline = proposalDeadline(proposalId, proposalIndexId);
+
+        if (deadline >= block.number) {
+            return ProposalState.Active;
+        }
+
+        if (_voteSucceeded(proposalId)) {
+            return ProposalState.Succeeded;
+        } else {
+            return ProposalState.Defeated;
+        }
+    }
+
+    function proposalSnapshot(
+        uint256 proposalId,
+        uint256 proposalIndex
+    ) public view returns (uint256) {
+        return
+            _projectIdToProposals[proposalId][proposalIndex]
+                .voteStart
+                .getDeadline();
+    }
+
+    function proposalDeadline(
+        uint256 proposalId,
+        uint256 proposalIndex
+    ) public view returns (uint256) {
+        return
+            _projectIdToProposals[proposalId][proposalIndex]
+                .voteEnd
+                .getDeadline();
+    }
+
+    function votingDelay() public view returns (uint256) {
+        return _votingDelay;
+    }
+
+    function votingPeriod() public view returns (uint256) {
+        return _votingPeriod;
+    }
+
+    function setProposalFee(
+        uint256 newFee,
+        uint256 tokenId
+    ) public onlyOwner(tokenId) {
+        tokenIdToProposalFee[tokenId] = newFee;
+    }
+
+    //i need someone to run a advertising campaign with these pictures...
+
+    //this will create a project NFT and the creator will be the owner of the NFT...
+
+    //this NFT will automatically show up on the proposal camp website in the ..
+
+    //anyone with a member nft can propose work on the project and provide a funding estimate and summary of work they shall preform
+
     //we want bids from members on projects
     //will  change who can vote on bid based on project type
-    //
 
     // -- crowd loan workflow
-    // contributors can vote on bids
+    // contributors can vote on proposals
 
     // -- agile project workflow
     // stakeholders must meet with team and refresh the escrow balance each meeting after demonstrating forward momentum
     // in long term goals
+    // only NFT holder can vote on proposal
 
     // -- waterfall workflow with single payor
     // funding goals met before work starts and left in escrow managed by smart contract
+    // only nft holder can vote on proposal
 
     function assignToMember(address member, uint256 proposalId) public {}
 
@@ -198,6 +373,12 @@ contract Project is ERC165, IERC721, IERC721Metadata {
             "ERC721: caller is not token owner nor approved"
         );
         _safeTransfer(from, to, tokenId, data);
+    }
+
+    function _voteSucceeded(uint256 proposalId) internal view returns (bool) {
+        ProposalVote storage proposalVote = _proposalVotes[proposalId];
+
+        return proposalVote.forVotes > proposalVote.againstVotes;
     }
 
     function _isApprovedOrOwner(
