@@ -24,18 +24,21 @@ contract Project is ERC165, IERC721, IERC721Metadata {
     struct ProjectCore {
         uint256 projectTokenId;
         uint256 projectHash;
-        Timers.BlockNumber voteStart;
+        Funding funding;
         Timers.BlockNumber voteEnd;
-        bool executed;
-        bool canceled;
+        ProjectState projectState;
+        Timers.BlockNumber startWorkPeriod;
+        Timers.BlockNumber endWorkPeriod;
         mapping(address => bool) hasVoted;
         ProposalCore[] proposals;
+        uint256 ownerBudgetAmount;
     }
 
     struct ProposalCore {
         uint256 memberTokenId;
         uint256 proposalHash;
         uint256 votes;
+        uint256 proposalAmountNeeded;
     }
 
     enum Funding {
@@ -49,11 +52,11 @@ contract Project is ERC165, IERC721, IERC721Metadata {
     }
 
     enum ProjectState {
-        PENDING,
+        VOTING,
+        FUNDING,
         ASSIGNED,
         CANCELED,
-        COMPLETED,
-        ABANDONED
+        COMPLETED
     }
 
     string public _projectMetaURL = "https://www.zini.org/project/";
@@ -76,8 +79,10 @@ contract Project is ERC165, IERC721, IERC721Metadata {
 
     address private _membersAddress;
 
-    uint256 private _votingDelay = 0;
     uint256 private _votingPeriod = 1000;
+
+    mapping(uint256 => uint256) private _projectOwnerBalance;
+    mapping(uint256 => uint256) private _proposalOwnerBalance;
 
     constructor(address membersAddress) {
         _membersAddress = membersAddress;
@@ -94,24 +99,34 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         _;
     }
 
-    ///PROJECT NFT MINT TO STAKEHOLDER
+    modifier isVoting(uint256 tokenId) {
+        require(
+            _projects[tokenId].projectState == ProjectState.VOTING,
+            "Incorrect project state"
+        );
+        _;
+    }
 
     function mintProject(
         string memory nameP,
         string memory summary,
         Workflow flow,
-        Funding funding
+        Funding funding,
+        uint256 ownerBudgetAmount
     ) public {
         _safeMint(msg.sender, _count);
-        uint64 snapshot = block.number.toUint64() + votingDelay().toUint64();
-        uint64 deadline = snapshot + votingPeriod().toUint64();
+        uint64 deadline = block.number.toUint64() + votingPeriod().toUint64();
         ProjectCore storage core = _projects[_count];
+        core.funding = funding;
         core.projectHash = generateProjectHash(nameP, summary, flow, funding);
         core.projectTokenId = _count;
-        core.voteStart.setDeadline(snapshot);
+        core.projectState = ProjectState.VOTING;
         core.voteEnd.setDeadline(deadline);
+        core.ownerBudgetAmount = ownerBudgetAmount;
         _count += 1;
     }
+
+    function cancelProject() public {}
 
     function updateProjectHash(
         uint256 tokenId,
@@ -119,7 +134,7 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         string memory summary,
         Workflow flow,
         Funding funding
-    ) public {
+    ) public isVoting(tokenId) {
         address owner = ownerOf(tokenId);
         require(msg.sender == owner, "Only owner of project token can ");
         _projects[tokenId].projectHash = generateProjectHash(
@@ -128,6 +143,15 @@ contract Project is ERC165, IERC721, IERC721Metadata {
             flow,
             funding
         );
+    }
+
+    function updateProjectAmount(
+        uint256 tokenId,
+        uint256 amount
+    ) public isVoting(tokenId) {
+        address owner = ownerOf(tokenId);
+        require(msg.sender == owner, "Only owner of project token can ");
+        _projects[tokenId].ownerBudgetAmount = amount;
     }
 
     function generateProjectHash(
@@ -148,18 +172,45 @@ contract Project is ERC165, IERC721, IERC721Metadata {
     function createProposal(
         uint256 memberId,
         uint256 projectId,
-        string memory summary
+        string memory summary,
+        uint256 amountNeeded
     ) public onlyMember {
         ProposalCore memory core;
         core.memberTokenId = memberId;
+        core.proposalAmountNeeded = amountNeeded;
         core.proposalHash = generateProposalHash(summary, projectId, memberId);
         _projects[projectId].proposals.push(core);
         emit Proposal(projectId, memberId);
     }
 
-    function castVote(uint256 projectTokenId, uint256) public {}
+    //Require funds in escrow?
+    //Project does not need escrow until a bid is selected. The member bid will tell the owner how much money
+    //is needed in escrow to allow the project to enter the "ASSIGNED" state.
 
-    function proposalVotes(uint256 proposalId) public {}
+    function cancelProposal(
+        uint256 projectTokenId,
+        uint256 proposalIndex
+    ) public {}
+
+    function completeProposal() public {}
+
+    function approveProposal() public {}
+
+    function castVote(uint256 projectTokenId, uint256 proposalIndex) public {
+        ProjectCore storage core = _projects[projectTokenId];
+        require(core.hasVoted[msg.sender] == false, "Has already voted");
+        if (core.funding == Funding.PRIVATE) {
+            address owner = ownerOf(projectTokenId);
+            require(
+                msg.sender == owner,
+                "Must be the owner of the project token"
+            );
+        }
+        core.hasVoted[msg.sender] = true;
+        _projects[projectTokenId].proposals[proposalIndex].votes += 1;
+    }
+
+    function getVotes(uint256 projectTokenId) public {}
 
     function hasVoted(
         uint256 projectTokenId,
@@ -185,48 +236,18 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         uint256 projectTokenId
     ) public view returns (ProjectState) {
         ProjectCore storage project = _projects[projectTokenId];
-
-        if (project.executed) {
-            return ProjectState.COMPLETED;
-        }
-
-        if (project.canceled) {
-            return ProjectState.CANCELED;
-        }
-
-        uint256 snapshot = proposalSnapshot(projectTokenId);
-
-        if (snapshot == 0) {
-            revert("Governor: unknown proposal id");
-        }
-
-        if (snapshot >= block.number) {
-            return ProjectState.PENDING;
-        }
-
-        uint256 deadline = proposalDeadline(projectTokenId);
-
-        if (deadline >= block.number) {
-            return ProjectState.ASSIGNED;
-        }
-
-        return ProjectState.ABANDONED;
-    }
-
-    function proposalSnapshot(
-        uint256 projectTokenId
-    ) public view returns (uint256) {
-        return _projects[projectTokenId].voteStart.getDeadline();
+        // VOTING,
+        // FUNDING
+        // ASSIGNED,
+        // CANCELED,
+        // COMPLETED
+        return project.projectState;
     }
 
     function proposalDeadline(
         uint256 projectTokenId
     ) public view returns (uint256) {
         return _projects[projectTokenId].voteEnd.getDeadline();
-    }
-
-    function votingDelay() public view returns (uint256) {
-        return _votingDelay;
     }
 
     function votingPeriod() public view returns (uint256) {
@@ -239,31 +260,6 @@ contract Project is ERC165, IERC721, IERC721Metadata {
     ) public onlyOwner(tokenId) {
         tokenIdToProposalFee[tokenId] = newFee;
     }
-
-    //i need someone to run a advertising campaign with these pictures...
-
-    //this will create a project NFT and the creator will be the owner of the NFT...
-
-    //this NFT will automatically show up on the proposal camp website in the ..
-
-    //anyone with a member nft can propose work on the project and provide a funding estimate and summary of work they shall preform
-
-    //we want bids from members on projects
-    //will  change who can vote on bid based on project type
-
-    // -- crowd loan workflow
-    // contributors can vote on proposals
-
-    // -- agile project workflow
-    // stakeholders must meet with team and refresh the escrow balance each meeting after demonstrating forward momentum
-    // in long term goals
-    // only NFT holder can vote on proposal
-
-    // -- waterfall workflow with single payor
-    // funding goals met before work starts and left in escrow managed by smart contract
-    // only nft holder can vote on proposal
-
-    function assignToMember(address member, uint256 proposalId) public {}
 
     function supportsInterface(
         bytes4 interfaceId

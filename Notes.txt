@@ -1,0 +1,14 @@
+-anyone can create a project nft.. 
+-they will suggest a range of money they are capable of spending on this project...
+-anyone holding a member nft can place a proposal on this project and request a certain amount of required to complete this project.
+-the website will show metadata about this member and the group he belongs to...
+-a project will start out in the voting state
+	if the project is private we only need 1 yes vote from the project owner.
+	if the project is crowd loan we will allow votes for a seven day period
+-once voting has ended the project will enter a funding state, the funding must meet the amount requested in the winning proposal
+- After the project has the correct funding it will go into an assigned state
+- After the member is assigned the project he must complete the work.. once the work is completed the funds locked in escrow will be released the person who completed the work.
+- we will need a intermediary/panel to control the escrowed funds to avoid conflicts between the owner and the proposer..
+-once project is marked completed all funds will be released
+-if the project is marked cancelled the funds may potentially need to be split, this will also require an intermediary/panel
+

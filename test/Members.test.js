@@ -9,6 +9,7 @@ const { ethers } = require("hardhat");
 const memberCompiled = require("../artifacts/contracts/Members.sol/Members.json");
 const memberBoardCompiled = require("../artifacts/contracts/GovernorBoard.sol/GovernorBoard.json");
 const memberVotesCompiled = require("../artifacts/contracts/MemberVote.sol/MemberVote.json");
+const projectCompiled = require('../artifacts/contracts/Project.sol/Project.json');
 
 describe("Base Test Cases", () => {
 
@@ -18,6 +19,8 @@ describe("Base Test Cases", () => {
         const boardFactoryFactory = await ethers.getContractFactory("GovernorBoardFactory");
         const factory = await boardFactoryFactory.deploy();
         var memberAddress = await factory.membersAddress();
+        var projectAddress = await factory.projectAddress();
+        var projectInstance = new ethers.Contract(projectAddress, projectCompiled.abi, owner);
         const memberContract = new ethers.Contract(memberAddress, memberCompiled.abi, owner);
         await factory.create("ZinziDAO", "ZZ");
         var usersTokens = await memberContract.getBoards(owner.address);
@@ -33,7 +36,7 @@ describe("Base Test Cases", () => {
             signers.push(wallet);
             memberBoard.addMember(wallet.address);
         }
-        return { memberContract, memberBoard, owner, otherAccount, signers, options };
+        return { memberContract, memberBoard, owner, otherAccount, signers, options, projectInstance };
     }
 
     it('has board member factory with member board', async () => {
@@ -134,6 +137,25 @@ describe("Base Test Cases", () => {
         var isGov = await memberBoard.isGovernor(otherAccount.address);
 
         expect(isGov).to.be.true;
+    });
+
+    it("can create a board, add a member and create a project", async () => {
+        const { memberContract, memberBoard, owner, otherAccount, signers, options, projectInstance } = await loadFixture(fixture);
+        const memberVotesAddress = await memberBoard.getMemberVotesAddress();
+        // string memory nameP,
+        // string memory summary,
+        // Workflow flow,
+        // Funding funding
+        projectInstance.mintProject("Run Advertising Campaign",
+            "I need someone to put a picture of my dog on a big billboard on 3rd steet in Baltimore",
+            0,
+            1,
+            10000000
+        );
+
+
+
+
     });
 
 });
