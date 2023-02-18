@@ -6,6 +6,7 @@ const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 const { expect, should } = require("chai");
 const { ethers } = require("hardhat");
 
+const governorBoardFactory = require('../artifacts/contracts/GovernorBoardFactory.sol/GovernorBoardFactory.json');
 const memberCompiled = require("../artifacts/contracts/Members.sol/Members.json");
 const memberBoardCompiled = require("../artifacts/contracts/GovernorBoard.sol/GovernorBoard.json");
 const memberVotesCompiled = require("../artifacts/contracts/MemberVote.sol/MemberVote.json");
@@ -18,6 +19,7 @@ describe("Base Test Cases", () => {
         const options = { gasLimit: 1000000 };
         const boardFactoryFactory = await ethers.getContractFactory("GovernorBoardFactory");
         const factory = await boardFactoryFactory.deploy();
+        
         var memberAddress = await factory.membersAddress();
         var projectAddress = await factory.projectAddress();
         var projectInstance = new ethers.Contract(projectAddress, projectCompiled.abi, owner);

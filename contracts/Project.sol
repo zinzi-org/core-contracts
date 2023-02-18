@@ -32,6 +32,7 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         mapping(address => bool) hasVoted;
         ProposalCore[] proposals;
         uint256 ownerBudgetAmount;
+        address winningBidder;
     }
 
     struct ProposalCore {
@@ -56,6 +57,7 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         FUNDING,
         ASSIGNED,
         CANCELED,
+        DISPUTED,
         COMPLETED
     }
 
@@ -192,7 +194,16 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         uint256 proposalIndex
     ) public {}
 
-    function completeProposal() public {}
+    function completeProposal(uint256 tokenId) public onlyOwner(tokenId) {}
+
+    function disputeProposal(uint256 tokenId) public onlyOwner(tokenId) {
+        ProjectCore storage core = _projects[tokenId];
+        require(
+            core.projectState == ProjectState.ASSIGNED,
+            "Project must be in an assigned state"
+        );
+        core.projectState = ProjectState.DISPUTED;
+    }
 
     function approveProposal() public {}
 
@@ -237,9 +248,10 @@ contract Project is ERC165, IERC721, IERC721Metadata {
     ) public view returns (ProjectState) {
         ProjectCore storage project = _projects[projectTokenId];
         // VOTING,
-        // FUNDING
+        // FUNDING,
         // ASSIGNED,
         // CANCELED,
+        // DISPUTED,
         // COMPLETED
         return project.projectState;
     }

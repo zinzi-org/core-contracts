@@ -12,9 +12,10 @@
   "author": "zinzi.org",
   "license": "ISC",
   "dependencies": {
-    "@truffle/hdwallet-provider": "^2.0.14",
+    "@truffle/hdwallet-provider": "^2.1.5",
     "fs-extra": "^10.1.0",
-    "web3": "^1.8.0"
+    "hardhat-gas-reporter": "^1.0.9",
+    "web3": "^1.8.2"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^2.0.0",
