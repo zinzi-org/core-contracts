@@ -13,9 +13,59 @@ import "./lib/SafeCast.sol";
 import "./lib/Math.sol";
 import "./Members.sol";
 
-contract Project is ERC165, IERC721, IERC721Metadata {
+interface IProject {
+    enum Workflow {
+        WATERFALL, //noniterative
+        AGILE //iterative
+    }
+
+    enum Funding {
+        PRIVATE,
+        CROWD_LOAN
+    }
+
+    enum ProjectState {
+        VOTING,
+        FUNDING,
+        ASSIGNED,
+        CANCELED,
+        DISPUTED,
+        COMPLETED
+    }
+
+    function mintProject(
+        string memory nameP,
+        string memory summary,
+        Workflow flow,
+        Funding funding,
+        uint256 ownerBudgetAmount
+    ) external;
+
+    function updateProjectHash(
+        uint256 tokenId,
+        string memory nameP,
+        string memory summary,
+        Workflow flow,
+        Funding funding
+    ) external;
+
+    function updateProjectAmount(uint256 tokenId, uint256 amount) external;
+
+    function generateProjectHash(
+        string memory nameP,
+        string memory summary,
+        Workflow flow,
+        Funding funding
+    ) external pure returns (uint256);
+}
+
+contract Project is ERC165, IERC721, IERC721Metadata, IProject {
     event ProjectCreated(uint256 projectTokenId);
-    event Proposal(uint256 projectTokenId, uint256 memberTokenId);
+    event Proposal(
+        uint256 projectTokenId,
+        uint256 memberTokenId,
+        uint256 proposalId
+    );
 
     using Timers for Timers.BlockNumber;
     using SafeCast for uint256;
@@ -32,7 +82,7 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         mapping(address => bool) hasVoted;
         ProposalCore[] proposals;
         uint256 ownerBudgetAmount;
-        address winningBidder;
+        uint256 winningProposalIndex;
     }
 
     struct ProposalCore {
@@ -40,25 +90,7 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         uint256 proposalHash;
         uint256 votes;
         uint256 proposalAmountNeeded;
-    }
-
-    enum Funding {
-        PRIVATE,
-        CROWD_LOAN
-    }
-
-    enum Workflow {
-        WATERFALL, //noniterative
-        AGILE //iterative
-    }
-
-    enum ProjectState {
-        VOTING,
-        FUNDING,
-        ASSIGNED,
-        CANCELED,
-        DISPUTED,
-        COMPLETED
+        uint256 requestedTimeSpan;
     }
 
     string public _projectMetaURL = "https://www.zini.org/project/";
@@ -126,9 +158,8 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         core.voteEnd.setDeadline(deadline);
         core.ownerBudgetAmount = ownerBudgetAmount;
         _count += 1;
+        emit ProjectCreated(core.projectTokenId);
     }
-
-    function cancelProject() public {}
 
     function updateProjectHash(
         uint256 tokenId,
@@ -175,24 +206,68 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         uint256 memberId,
         uint256 projectId,
         string memory summary,
-        uint256 amountNeeded
+        uint256 amountNeeded,
+        uint256 timeNeeded
     ) public onlyMember {
         ProposalCore memory core;
         core.memberTokenId = memberId;
         core.proposalAmountNeeded = amountNeeded;
+        core.requestedTimeSpan = timeNeeded;
         core.proposalHash = generateProposalHash(summary, projectId, memberId);
+        uint256 proposalId = _projects[projectId].proposals.length;
         _projects[projectId].proposals.push(core);
-        emit Proposal(projectId, memberId);
+        emit Proposal(projectId, memberId, proposalId);
     }
 
     //Require funds in escrow?
     //Project does not need escrow until a bid is selected. The member bid will tell the owner how much money
     //is needed in escrow to allow the project to enter the "ASSIGNED" state.
 
+    function generateProposalHash(
+        string memory summary,
+        uint256 projectId,
+        uint256 memberId
+    ) public pure returns (uint256) {
+        return uint256(keccak256(abi.encode(summary, projectId, memberId)));
+    }
+
+    function updateProposal(
+        uint256 projectTokenId,
+        uint256 proposalIndex,
+        string memory summary,
+        uint256 amountNeeded,
+        uint256 timeNeeded
+    ) public onlyMember {
+        ProposalCore storage core = _projects[projectTokenId].proposals[
+            proposalIndex
+        ];
+        Members member = Members(_membersAddress);
+        require(
+            msg.sender == member.ownerOf(core.memberTokenId),
+            "Proposal does not belong to member"
+        );
+        core.proposalHash = generateProposalHash(
+            summary,
+            projectTokenId,
+            proposalIndex
+        );
+        core.proposalAmountNeeded = amountNeeded;
+        core.requestedTimeSpan = timeNeeded;
+    }
+
     function cancelProposal(
         uint256 projectTokenId,
         uint256 proposalIndex
-    ) public {}
+    ) public onlyOwner(projectTokenId) {
+        ProposalCore storage core = _projects[projectTokenId].proposals[
+            proposalIndex
+        ];
+        require(
+            core.votes == 0,
+            "Proposal has already been voted on and cannot be cancelled"
+        );
+        delete _projects[projectTokenId].proposals[proposalIndex];
+    }
 
     function completeProposal(uint256 tokenId) public onlyOwner(tokenId) {}
 
@@ -205,7 +280,44 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         core.projectState = ProjectState.DISPUTED;
     }
 
-    function approveProposal() public {}
+    function approveProposal(
+        uint256 projectTokenId,
+        uint256 proposalIndex
+    ) public {
+        ProjectCore storage core = _projects[projectTokenId];
+
+        if (core.funding == Funding.PRIVATE) {
+            address owner = ownerOf(projectTokenId);
+            require(
+                msg.sender == owner,
+                "Only owner of project can approve prop"
+            );
+            if (_projects[projectTokenId].proposals[proposalIndex].votes > 0) {
+                uint64 snapshot = block.number.toUint64();
+                _projects[projectTokenId].winningProposalIndex = proposalIndex;
+                _projects[projectTokenId].projectState = ProjectState.ASSIGNED;
+                _projects[projectTokenId].startWorkPeriod.setDeadline(snapshot);
+                uint64 requestedTimeSpan = _projects[projectTokenId]
+                    .proposals[proposalIndex]
+                    .requestedTimeSpan
+                    .toUint64();
+                _projects[projectTokenId].endWorkPeriod.setDeadline(
+                    snapshot + requestedTimeSpan
+                );
+            }
+        } else {
+            //TODO IMPLEMENT CROWD LOAN APPROVAL
+            //Can only approve proposal if it has the majority of votes
+            //and the proposal has enough funding for people that have voted
+            //and enough time has been given for people to vote
+            //and the project is in the voting state
+            //and the project has not already been assigned
+            //and the project has not already been disputed
+            //and the project has not already been completed
+            //and the project has not already been cancelled
+            //and the project has not already been refunded
+        }
+    }
 
     function castVote(uint256 projectTokenId, uint256 proposalIndex) public {
         ProjectCore storage core = _projects[projectTokenId];
@@ -221,26 +333,19 @@ contract Project is ERC165, IERC721, IERC721Metadata {
         _projects[projectTokenId].proposals[proposalIndex].votes += 1;
     }
 
-    function getVotes(uint256 projectTokenId) public {}
+    function getVotes(
+        uint256 projectTokenId,
+        uint256 proposalIndex
+    ) public view returns (uint256) {
+        ProjectCore storage core = _projects[projectTokenId];
+        return core.proposals[proposalIndex].votes;
+    }
 
     function hasVoted(
         uint256 projectTokenId,
         address account
     ) public view returns (bool) {
         return _projects[projectTokenId].hasVoted[account];
-    }
-
-    function generateProposalHash(
-        string memory projectSummary,
-        uint256 projectTokenId,
-        uint256 memberTokenId
-    ) public pure returns (uint256) {
-        return
-            uint256(
-                keccak256(
-                    abi.encode(projectSummary, projectTokenId, memberTokenId)
-                )
-            );
     }
 
     function projectState(

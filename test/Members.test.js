@@ -19,7 +19,7 @@ describe("Base Test Cases", () => {
         const options = { gasLimit: 1000000 };
         const boardFactoryFactory = await ethers.getContractFactory("GovernorBoardFactory");
         const factory = await boardFactoryFactory.deploy();
-        
+
         var memberAddress = await factory.membersAddress();
         var projectAddress = await factory.projectAddress();
         var projectInstance = new ethers.Contract(projectAddress, projectCompiled.abi, owner);
@@ -38,7 +38,7 @@ describe("Base Test Cases", () => {
             signers.push(wallet);
             memberBoard.addMember(wallet.address);
         }
-        return { memberContract, memberBoard, owner, otherAccount, signers, options, projectInstance };
+        return { memberContract, memberBoard, owner, otherAccount, signers, options, projectInstance, projectAddress };
     }
 
     it('has board member factory with member board', async () => {
@@ -142,18 +142,54 @@ describe("Base Test Cases", () => {
     });
 
     it("can create a board, add a member and create a project", async () => {
-        const { memberContract, memberBoard, owner, otherAccount, signers, options, projectInstance } = await loadFixture(fixture);
+        const { memberContract, memberBoard, owner, otherAccount, signers, options, projectInstance, projectAddress } = await loadFixture(fixture);
         const memberVotesAddress = await memberBoard.getMemberVotesAddress();
         // string memory nameP,
         // string memory summary,
         // Workflow flow,
         // Funding funding
-        projectInstance.mintProject("Run Advertising Campaign",
+        var propTx = await projectInstance.mintProject("Run Advertising Campaign",
             "I need someone to put a picture of my dog on a big billboard on 3rd steet in Baltimore",
             0,
-            1,
+            0,
             10000000
         );
+
+        const rcMint = await propTx.wait();
+        const eventMint = rcMint.events.find(event => event.event === "ProjectCreated");
+        const [projectTokenId] = eventMint.args;
+       
+        var tokenId = await memberContract.getTokenId(otherAccount.address);
+      
+        var projectInstanceOther = new ethers.Contract(projectAddress, projectCompiled.abi, otherAccount);
+
+        //get list of projects
+        //will persist in mongodb and allow validation via the transaction logs.. or query the transaction logs each request
+
+        // uint256 memberId,
+        // uint256 projectId,
+        // string memory summary,
+        // uint256 amountNeeded,
+        // uint256 timeNeeded
+        //someone with a member nft can submit a proposal to the project
+        
+        var proposalTx = await projectInstanceOther.createProposal(tokenId, projectTokenId, "I will do this because im smart", 1000, 8000);
+        const rc = await proposalTx.wait(); // 0ms, as tx is already confirmed
+        const event = rc.events.find(event => event.event === 'Proposal');
+        const [proposalId] = event.args;
+
+
+        await projectInstance.castVote(projectTokenId, proposalId, options);
+
+        var votes = await projectInstance.getVotes(projectTokenId, proposalId);
+        expect(votes).to.equal(1);
+
+        await projectInstance.approveProposal(projectTokenId, proposalId);
+
+        var state = await projectInstance.projectState(projectTokenId);
+        expect(state).to.equal(2);
+
+
 
 
 

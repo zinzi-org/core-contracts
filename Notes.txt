@@ -12,3 +12,20 @@
 -once project is marked completed all funds will be released
 -if the project is marked cancelled the funds may potentially need to be split, this will also require an intermediary/panel
 
+--
+disputes
+---
+
+Handling disputes in smart contracts is a complex problem, but there are some best practices that you can follow to mitigate the risks. Here are some suggestions:
+
+Establish clear rules and guidelines for the project and bidding process: Before starting the bidding process, make sure that everyone involved understands the rules and guidelines. Clearly state what is expected of the service provider, what criteria the bids will be evaluated on, and what will happen if the project is not successfully completed.
+
+Use a multi-signature escrow system: The funds can be held in a multi-signature escrow system, where both the service provider and the project creator must agree on the release of funds. This ensures that the funds are held securely and that both parties have an equal say in the release of funds.
+
+Use a reputation system: You can establish a reputation system that records the performance of the service providers. This way, if a dispute arises, the reputation of the service provider can be taken into consideration when determining how much funds to award or refund.
+
+Use a third-party arbitration service: If a dispute arises that cannot be resolved between the service provider and project creator, consider using a third-party arbitration service. This can be a trusted mediator or an automated system that is designed to handle disputes.
+
+Include a dispute resolution clause in the smart contract: It is a good idea to include a dispute resolution clause in the smart contract that outlines the steps that will be taken in the event of a dispute. This will ensure that everyone involved is aware of the process and can act accordingly.
+
+Overall, it is important to establish clear rules and guidelines, use a secure escrow system, and have a plan in place for dispute resolution. By following these best practices, you can minimize the risk of disputes and ensure that everyone involved in the project is treated fairly.

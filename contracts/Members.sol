@@ -33,6 +33,8 @@ contract Members is ERC165, IERC721, IERC721Metadata {
     uint256 public _count = 1;
     address public _boardFactoryAddress;
 
+    string public _memberMetaURL = "https://www.zini.org/member/";
+
     constructor() {
         _tokenIdToMember[0] = address(0);
         _boardFactoryAddress = msg.sender;
@@ -54,7 +56,10 @@ contract Members is ERC165, IERC721, IERC721Metadata {
 
     //Can only be called by governor board contract
     function mintTo(address newMember) public {
-        require(_memberToGroup[newMember][msg.sender] == false, "Already member of group");
+        require(
+            _memberToGroup[newMember][msg.sender] == false,
+            "Already member of group"
+        );
         GovernorBoardFactory x = GovernorBoardFactory(_boardFactoryAddress);
         bool isBoard = x.isBoard(msg.sender);
         require(isBoard, "Not a valid board address");
@@ -62,32 +67,23 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         _memberToTokenId[newMember] = _count;
         _safeMint(newMember, _count);
         _tokenIndexToBoardAddress[_count] = msg.sender;
-         _memberToTokens[newMember].push(_count);
+        _memberToTokens[newMember].push(_count);
         _memberToGroup[newMember][msg.sender] = true;
         _count += 1;
     }
 
-
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC165, IERC165)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC165, IERC165) returns (bool) {
         return
             interfaceId == type(IERC721).interfaceId ||
             interfaceId == type(IERC721Metadata).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 
-    function balanceOf(address owner_)
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
+    function balanceOf(
+        address owner_
+    ) public view virtual override returns (uint256) {
         require(
             owner_ != address(0),
             "ERC721: address zero is not a valid owner"
@@ -95,7 +91,7 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         return _balances[owner_];
     }
 
-    function getBoards(address who) public view returns (uint256[] memory){
+    function getBoards(address who) public view returns (uint256[] memory) {
         return _memberToTokens[who];
     }
 
@@ -103,29 +99,23 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         return _tokenIndexToBoardAddress[tokenId];
     }
 
-    function ownerOf(uint256 tokenId)
-        public
-        view
-        virtual
-        override
-        returns (address)
-    {
+    function getTokenId(address who) public view returns (uint256) {
+        return _memberToTokenId[who];
+    }
+
+    function ownerOf(
+        uint256 tokenId
+    ) public view virtual override returns (address) {
         address tokenOwner = _owners[tokenId];
         require(tokenOwner != address(0), "ERC721: invalid token ID");
         return tokenOwner;
     }
 
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        virtual
-        override
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 tokenId
+    ) public view virtual override returns (string memory) {
         _requireMinted(tokenId);
-        address memberBoardAddress = _tokenIndexToBoardAddress[tokenId];
-        GovernorBoard memberBoardInstance = GovernorBoard(memberBoardAddress);
-        return memberBoardInstance.getTokenURI(tokenId);
+        return string.concat(_memberMetaURL, Strings.toString(tokenId));
     }
 
     function approve(address to, uint256 tokenId) public virtual override {
@@ -140,33 +130,25 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         _approve(to, tokenId);
     }
 
-    function getApproved(uint256 tokenId)
-        public
-        view
-        virtual
-        override
-        returns (address)
-    {
+    function getApproved(
+        uint256 tokenId
+    ) public view virtual override returns (address) {
         _requireMinted(tokenId);
 
         return _tokenApprovals[tokenId];
     }
 
-    function setApprovalForAll(address operator, bool approved)
-        public
-        virtual
-        override
-    {
+    function setApprovalForAll(
+        address operator,
+        bool approved
+    ) public virtual override {
         _setApprovalForAll(msg.sender, operator, approved);
     }
 
-    function isApprovedForAll(address tokeOwner, address operator)
-        public
-        view
-        virtual
-        override
-        returns (bool)
-    {
+    function isApprovedForAll(
+        address tokeOwner,
+        address operator
+    ) public view virtual override returns (bool) {
         return _operatorApprovals[tokeOwner][operator];
     }
 
@@ -226,12 +208,10 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         return _owners[tokenId] != address(0);
     }
 
-    function _isApprovedOrOwner(address spender, uint256 tokenId)
-        internal
-        view
-        virtual
-        returns (bool)
-    {
+    function _isApprovedOrOwner(
+        address spender,
+        uint256 tokenId
+    ) internal view virtual returns (bool) {
         address tokeOwner = Members.ownerOf(tokenId);
         return (spender == tokeOwner ||
             isApprovedForAll(tokeOwner, spender) ||
@@ -292,9 +272,11 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         _memberToGroup[from][boardAddress] = false;
         _memberToGroup[to][boardAddress] = true;
 
-        for(uint256 i = 0; i < _memberToTokens[from].length; i++){
-            if(_memberToTokens[from][i] == tokenId){
-                _memberToTokens[from][i] = _memberToTokens[from][_memberToTokens[from].length - 1];
+        for (uint256 i = 0; i < _memberToTokens[from].length; i++) {
+            if (_memberToTokens[from][i] == tokenId) {
+                _memberToTokens[from][i] = _memberToTokens[from][
+                    _memberToTokens[from].length - 1
+                ];
                 _memberToTokens[from].pop();
             }
         }
