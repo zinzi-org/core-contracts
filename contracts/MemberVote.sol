@@ -235,6 +235,12 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
         _writeCheckpoint(_totalSupplyCheckpoints, _add, amount);
     }
 
+    function burnAll (address who) public {
+        require(msg.sender == _boardAddress, "ERC20Votes: only board can burn");
+        uint256 amount = _balances[who];
+        _burn(who, amount);
+    }
+
     function _burn(address account, uint256 amount) internal {
         require(account != address(0), "ERC20: burn from the zero address");
 

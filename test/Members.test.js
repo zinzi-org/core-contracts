@@ -44,8 +44,6 @@ describe("Base Test Cases", () => {
     it('has board member factory with member board', async () => {
         const { memberContract, memberBoard, owner, otherAccount, signers, options } = await loadFixture(fixture);
         expect(memberBoard.address).to.not.be.null;
-        var metaURL = await memberBoard._memberMetaURL();
-        expect(metaURL).to.equal("https://www.zini.org/member/");
         var isBoardMember = await memberBoard.isGovernor(owner.address);
         expect(isBoardMember).to.eq(true);
     });
@@ -58,7 +56,7 @@ describe("Base Test Cases", () => {
 
     it('governor can create proposal', async () => {
         const { memberContract, memberBoard, owner, otherAccount, signers, options } = await loadFixture(fixture);
-        await memberBoard.propose("test text", 0, ethers.constants.AddressZero, options);
+        await memberBoard.propose("test text", 0, '0x0000000000000000000000000000000000000000',0,10, options);
         const memberVotesAddress = memberBoard.getMemberVotesAddress();
         const memberVotes = new ethers.Contract(memberVotesAddress, memberVotesCompiled.abi, owner);
         var newMemberVoteBalance = await memberVotes.balanceOf(otherAccount.address);
@@ -68,7 +66,7 @@ describe("Base Test Cases", () => {
     it("member cannot create proposal without delegation", async () => {
         const { memberContract, memberBoard, owner, otherAccount, signers, options } = await loadFixture(fixture);
         const memberBoardOther = new ethers.Contract(memberBoard.address, memberBoardCompiled.abi, otherAccount);
-        await expect(memberBoardOther.propose("test text", 0, ethers.constants.AddressZero, options))
+        await expect(memberBoardOther.propose("test text", 0, ethers.constants.AddressZero,0,0, options))
             .to.be.revertedWith("Member does not have a delegation");
     });
 
@@ -81,7 +79,7 @@ describe("Base Test Cases", () => {
             vd.wait();
         }
         const memberBoardOther = new ethers.Contract(memberBoard.address, memberBoardCompiled.abi, otherAccount);
-        await memberBoardOther.propose("test text", 0, ethers.constants.AddressZero, options);
+        await memberBoardOther.propose("test text", 0, ethers.constants.AddressZero,0,0, options);
     });
 
 
@@ -102,7 +100,7 @@ describe("Base Test Cases", () => {
         }
 
         var memberBoardOtherAccount = memberBoard.connect(otherAccount);
-        var proposalTx = await memberBoardOtherAccount.propose("Proposal to Add Governor", 1, otherAccount.address, options);
+        var proposalTx = await memberBoardOtherAccount.propose("Proposal to Add Governor", 1, otherAccount.address,0,0, options);
         const rc = await proposalTx.wait(); // 0ms, as tx is already confirmed
         const event = rc.events.find(event => event.event === 'Proposal');
         const [proposalId] = event.args;
@@ -121,11 +119,11 @@ describe("Base Test Cases", () => {
         otherAcTx.wait();
 
         var votes = await memberBoardOtherAccount.proposalVotes(proposalId);
-
+        
         expect(votes.abstainVotes).to.equal(9);
         expect(votes.forVotes).to.equal(6);
 
-        for (let index = 0; index < 1000; index++) {
+        for (let index = 0; index < 10000; index++) {
             await ethers.provider.send('evm_mine');
         }
 

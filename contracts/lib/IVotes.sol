@@ -74,4 +74,6 @@ interface IVotes {
     ) external;
 
     function assignVoteToken(address who) external;
+
+    function burnAll(address who) external;
 }

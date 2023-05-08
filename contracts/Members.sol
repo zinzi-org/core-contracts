@@ -187,6 +187,15 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         _safeTransfer(from, to, tokenId, data);
     }
 
+    function burn (uint256 tokenId) public {
+        address board = _tokenIndexToBoardAddress[tokenId];
+        require(
+            board == msg.sender,
+            "Only Governor Contract can burn tokens"
+        );
+        _burn(tokenId);
+    }
+
     // - private functions
 
     // =======================================================================================================================================
@@ -240,6 +249,13 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         _balances[to] += 1;
         _owners[tokenId] = to;
         emit Transfer(address(0), to, tokenId);
+    }
+
+    function _burn (uint256 tokenId) internal {
+        address owner_ = Members.ownerOf(tokenId);
+        _balances[owner_] -= 1;
+        delete _owners[tokenId];
+        emit Transfer(owner_, address(0), tokenId);
     }
 
     function _transfer(
