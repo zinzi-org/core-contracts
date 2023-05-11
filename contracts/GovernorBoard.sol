@@ -12,7 +12,7 @@ import "./MemberVote.sol";
 
 contract GovernorBoard {
     event Proposal(uint256 proposalId, string description, PropType pType);
-    event MemberProposal(uint256 );
+    event MemberProposal(address who, uint256 proposalId, string description);
     event ApproveMember(address member, address governor);
     event AddGovernor(address governor, uint256 proposalId);
     event RemoveGovernor(address governor, uint256 proposalId);
@@ -62,14 +62,14 @@ contract GovernorBoard {
     }
 
     enum ProposalState {
-        Pending,
-        Active,
-        Canceled,
-        Defeated,
-        Succeeded,
-        Queued,
-        Expired,
-        Executed
+        Pending,   // 0
+        Active,    // 1
+        Canceled,  // 2
+        Defeated,  // 3
+        Succeeded, // 4
+        Queued,    // 5
+        Expired,   // 6
+        Executed   // 7
     }
 
     IVotes private immutable _token;
@@ -150,7 +150,7 @@ contract GovernorBoard {
         return _memberCount;
     }
 
-    function proposalDetail(uint256 proposalId) public view returns (PropType, uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256) {
+    function proposalDetail(uint256 proposalId) public view returns (PropType, uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256, uint256) {
         ProposalCore storage proposal = _proposals[proposalId];
         return (
             proposal.pType,
@@ -163,8 +163,13 @@ contract GovernorBoard {
             proposal.votes.againstVotes,
             proposal.votes.forVotes,
             proposal.votes.abstainVotes,
-            proposal.votes.hasVoted[msg.sender] ? 1 : 0
+            proposal.votes.hasVoted[msg.sender] ? 1 : 0,
+            _applicant_Fee
         );
+    }
+
+    function getApplicantFee() public view returns (uint256) {
+        return _applicant_Fee;
     }
 
     function proposeMember(string memory description, address who) public payable{
@@ -184,7 +189,7 @@ contract GovernorBoard {
         proposal.pType = PropType.APPLICANT;
         proposal.voteStart.setDeadline(block.number.toUint64());
         proposal.voteEnd.setDeadline(block.number.toUint64() + _votingPeriod.toUint64());
-        emit Proposal(proposalId, description, PropType.APPLICANT);
+        emit MemberProposal(who, proposalId, description);
     }
 
     function propose(
