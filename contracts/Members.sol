@@ -9,6 +9,7 @@ import "./GovernorBoardFactory.sol";
 import "./GovernorBoard.sol";
 import "./lib/Strings.sol";
 import "./lib/ERC165.sol";
+import "./Member.sol";
 
 contract Members is ERC165, IERC721, IERC721Metadata {
     using Strings for uint256;
@@ -29,6 +30,8 @@ contract Members is ERC165, IERC721, IERC721Metadata {
     mapping(address => uint256) private _balances;
     mapping(uint256 => address) private _tokenApprovals;
     mapping(address => mapping(address => bool)) private _operatorApprovals;
+
+    mapping(uint256 => address) private _tokenIdToMetaAddress;
 
     uint256 public _count = 1;
     address public _boardFactoryAddress;
@@ -194,6 +197,17 @@ contract Members is ERC165, IERC721, IERC721Metadata {
             "Only Governor Contract can burn tokens"
         );
         _burn(tokenId);
+    }
+
+    function initMemberMetaPackage(uint256 tokenId) public returns(address) {
+        require(msg.sender == _owners[tokenId], "Only token owner can init member meta package");
+        address memberMetaContract = address(new Member(msg.sender, tokenId));
+        _tokenIdToMetaAddress[tokenId] = memberMetaContract;
+        return memberMetaContract;
+    }
+
+    function getMemberMetaAddress(uint256 tokenId) public view returns(address) {
+        return _tokenIdToMetaAddress[tokenId];
     }
 
     // - private functions

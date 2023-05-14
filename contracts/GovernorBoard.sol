@@ -264,11 +264,7 @@ contract GovernorBoard {
     //he needs a certain _memberDelegationPercentatge and cannot do it with a org that has fewer than 5 members
     function memberHasDelegation(address who) public view returns (bool) {
         uint256 votes = getVotes(who, block.number - 1);
-        require(
-            votes.average(_memberCount) >= _delegatedProposalThreashold,
-            "Member does not have a delegation"
-        );
-        return true;
+        return votes.average(_memberCount) >= _delegatedProposalThreashold;
     }
 
     function castVote(

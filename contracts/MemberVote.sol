@@ -159,7 +159,15 @@ contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
     }
 
     function delegate(address delegatee) public {
+        require(_msgSender() != delegatee, "Cannot delegate to yourself");
+        require(_msgSender() != address(0), "Cannot delegate from zero address");
         _delegate(_msgSender(), delegatee);
+    }
+
+    function reclaimVote() public {
+        require(_msgSender() != address(0), "Cannot reclaim from zero address");
+        require(_msgSender() != delegateSafeCheck(_msgSender()), "Cannot reclaim from yourself");
+        _delegate(_msgSender(), _msgSender());
     }
 
     function delegateBySig(
