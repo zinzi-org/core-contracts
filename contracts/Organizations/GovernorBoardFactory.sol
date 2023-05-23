@@ -4,18 +4,18 @@ pragma solidity ^0.8.17;
 import "./GovernorBoard.sol";
 import "./Members.sol";
 import "./MemberVote.sol";
-import "./Project.sol";
+import "../Projects/ProjectToken.sol";
 
 contract GovernorBoardFactory {
     event BoardCreated(address);
 
     mapping(address => bool) public _boards;
     address immutable _membersAddress;
-    address immutable _projectAddress;
+    address immutable _projectTokenAddress;
 
     constructor() {
         _membersAddress = address(new Members());
-        _projectAddress = address(new Project(_membersAddress));
+        _projectTokenAddress = address(new ProjectToken(_membersAddress));
     }
 
     function create(string memory name, string memory symbol) public {
@@ -36,7 +36,7 @@ contract GovernorBoardFactory {
         return _membersAddress;
     }
 
-    function projectAddress() public view returns (address) {
-        return _projectAddress;
+    function projectTokenAddress() public view returns (address) {
+        return _projectTokenAddress;
     }
 }

@@ -3,17 +3,15 @@
 
 pragma solidity ^0.8.17;
 
-import "./lib/IERC20Metadata.sol";
-import "./lib/Context.sol";
-import "./lib/IVotes.sol";
-import "./lib/SafeCast.sol";
-import "./lib/Counters.sol";
-import "./lib/Math.sol";
-import "./lib/ECDSA.sol";
-import "./lib/EIP712.sol";
-import "./lib/IERC20.sol";
-
-import "hardhat/console.sol";
+import "../lib/IERC20Metadata.sol";
+import "../lib/Context.sol";
+import "../lib/IVotes.sol";
+import "../lib/SafeCast.sol";
+import "../lib/Counters.sol";
+import "../lib/Math.sol";
+import "../lib/ECDSA.sol";
+import "../lib/EIP712.sol";
+import "../lib/IERC20.sol";
 
 contract MemberVote is Context, IERC20, IERC20Metadata, IVotes, EIP712 {
     struct Checkpoint {

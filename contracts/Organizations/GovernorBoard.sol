@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "./lib/Strings.sol";
-import "./lib/Timers.sol";
-import "./lib/IVotes.sol";
-import "./lib/SafeCast.sol";
-import "./lib/Math.sol";
+import "../lib/Strings.sol";
+import "../lib/Timers.sol";
+import "../lib/IVotes.sol";
+import "../lib/SafeCast.sol";
+import "../lib/Math.sol";
 
 import "./Members.sol";
 import "./MemberVote.sol";
+
+import "hardhat/console.sol";
 
 contract GovernorBoard {
     event Proposal(uint256 proposalId, string description, PropType pType);
@@ -79,7 +81,7 @@ contract GovernorBoard {
 
     uint256 private _votingDelay = 0;
     uint256 private _votingPeriod = 10000;
-    uint256 private _delegatedProposalThreashold = 10;
+    uint256 private _delegatedProposalThreashold = 12;
     uint256 private _minMemberCountForDelgations = 5;
     uint256 private _applicant_Fee = 100;
 
@@ -202,6 +204,9 @@ contract GovernorBoard {
             isGovernor(msg.sender) || memberHasDelegation(msg.sender),
             "Not enough voting power to create proposal"
         );
+
+
+       
 
         uint256 proposalId = hashProposal(
             pType,

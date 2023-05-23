@@ -2,13 +2,13 @@
 // OpenZeppelin Contracts (last updated v4.7.0) (token/ERC721/ERC721.sol)
 pragma solidity ^0.8.17;
 
-import "./lib/IERC721.sol";
-import "./lib/IERC721Receiver.sol";
-import "./lib/IERC721Metadata.sol";
+import "../lib/IERC721.sol";
+import "../lib/IERC721Receiver.sol";
+import "../lib/IERC721Metadata.sol";
 import "./GovernorBoardFactory.sol";
 import "./GovernorBoard.sol";
-import "./lib/Strings.sol";
-import "./lib/ERC165.sol";
+import "../lib/Strings.sol";
+import "../lib/ERC165.sol";
 import "./Member.sol";
 
 contract Members is ERC165, IERC721, IERC721Metadata {
