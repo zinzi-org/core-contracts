@@ -7,7 +7,7 @@ const { expect, should } = require("chai");
 const { ethers } = require("hardhat");
 
 
-describe("Base Test Cases", () => {
+describe("Gov Org Test Cases", () => {
 
     async function fixture() {
 
@@ -106,7 +106,7 @@ describe("Base Test Cases", () => {
     //we will then create a proposal to give member governor status
     //we will run a vote and check the results to ensure the vote won
     // 6 - for votes
-    // 9 - abstain votes
+    // 10 - abstain votes
     // Proposal State - Success
     it("Propose new governor with delegation", async () => {
         const { factoryContract, membersContract, boardContract, memberVotesContract, signers } = await loadFixture(fixture);
@@ -121,15 +121,6 @@ describe("Base Test Cases", () => {
         }
 
         let boardContractInst = boardContract.connect(signers[1]);
-
-
-        // function propose(
-        //     string memory description,
-        //     PropType pType,
-        //     address who,
-        //     uint256 amount,
-        //     uint256 votingDelay) public {
-
 
         let proposalTx = await boardContractInst.populateTransaction.propose("Proposal to Add Governor", 1, signers[1].address, 0, 0);
         let gasEstimate = await ethers.provider.estimateGas(proposalTx);

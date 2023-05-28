@@ -12,6 +12,7 @@ import "../lib/Timers.sol";
 import "../lib/SafeCast.sol";
 import "../lib/Math.sol";
 import "../Organizations/Members.sol";
+import "./Task.sol";
 
 interface IProjectToken is IERC721  {
 
@@ -37,23 +38,11 @@ contract ProjectToken is ERC165, IERC721, IERC721Metadata, IProjectToken {
     mapping(uint256 => address) private _owners;
     mapping(uint256 => address) private _tokenParent;
 
-    mapping(address => bool) private _isProjectContract;
-
     mapping(address => uint256) private _balances;
     mapping(uint256 => address) private _tokenApprovals;
     mapping(address => mapping(address => bool)) private _operatorApprovals;
 
-    address private _membersAddress;
-
-    constructor(address membersAddress) {
-        _membersAddress = membersAddress;
-    }
-
     function mintProject(address owner) public returns (uint256) {
-        require(
-            _isProjectContract[msg.sender],
-            "ERC721: caller is not a project contract"
-        );
         _safeMint(owner, _count);
         _tokenParent[_count] = msg.sender;
         _count += 1;
@@ -95,11 +84,11 @@ contract ProjectToken is ERC165, IERC721, IERC721Metadata, IProjectToken {
     }
 
     function approve(address to, uint256 tokenId) public virtual override {
-        address tokeOwner = ProjectToken.ownerOf(tokenId);
-        require(to != tokeOwner, "ERC721: approval to current owner");
+        address tokenOwner = ProjectToken.ownerOf(tokenId);
+        require(to != tokenOwner, "ERC721: approval to current owner");
 
         require(
-            msg.sender == tokeOwner || isApprovedForAll(tokeOwner, msg.sender),
+            msg.sender == tokenOwner || isApprovedForAll(tokenOwner, msg.sender),
             "ERC721: approve caller is not token owner nor approved for all"
         );
 
@@ -122,10 +111,10 @@ contract ProjectToken is ERC165, IERC721, IERC721Metadata, IProjectToken {
     }
 
     function isApprovedForAll(
-        address tokeOwner,
+        address tokenOwner,
         address operator
     ) public view virtual override returns (bool) {
-        return _operatorApprovals[tokeOwner][operator];
+        return _operatorApprovals[tokenOwner][operator];
     }
 
     function transferFrom(
@@ -167,9 +156,9 @@ contract ProjectToken is ERC165, IERC721, IERC721Metadata, IProjectToken {
         address spender,
         uint256 tokenId
     ) internal view virtual returns (bool) {
-        address tokeOwner = ProjectToken.ownerOf(tokenId);
-        return (spender == tokeOwner ||
-            isApprovedForAll(tokeOwner, spender) ||
+        address tokenOwner = ProjectToken.ownerOf(tokenId);
+        return (spender == tokenOwner ||
+            isApprovedForAll(tokenOwner, spender) ||
             getApproved(tokenId) == spender);
     }
 
@@ -208,13 +197,13 @@ contract ProjectToken is ERC165, IERC721, IERC721Metadata, IProjectToken {
     }
 
     function _setApprovalForAll(
-        address tokeOwner,
+        address tokenOwner,
         address operator,
         bool approved
     ) internal virtual {
-        require(tokeOwner != operator, "ERC721: approve to caller");
-        _operatorApprovals[tokeOwner][operator] = approved;
-        emit ApprovalForAll(tokeOwner, operator, approved);
+        require(tokenOwner != operator, "ERC721: approve to caller");
+        _operatorApprovals[tokenOwner][operator] = approved;
+        emit ApprovalForAll(tokenOwner, operator, approved);
     }
 
     function _approve(address to, uint256 tokenId) internal virtual {

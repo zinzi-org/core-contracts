@@ -10,8 +10,6 @@ import "../lib/Math.sol";
 import "./Members.sol";
 import "./MemberVote.sol";
 
-import "hardhat/console.sol";
-
 contract GovernorBoard {
     event Proposal(uint256 proposalId, string description, PropType pType);
     event MemberProposal(address who, uint256 proposalId, string description);
@@ -37,6 +35,8 @@ contract GovernorBoard {
         APPLICANT,
         APPLICANT_FEE,
         DISTRIBUE_FUNDS
+        // ADD_EXTERNAL_CONTRACT_ADDRESS,
+        // EXECUTE_EXTERNAL_CONTRACT
     }
 
     struct ProposalCore {
@@ -204,9 +204,6 @@ contract GovernorBoard {
             isGovernor(msg.sender) || memberHasDelegation(msg.sender),
             "Not enough voting power to create proposal"
         );
-
-
-       
 
         uint256 proposalId = hashProposal(
             pType,

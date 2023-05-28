@@ -29,6 +29,14 @@ contract Task {
         COMPLETED
     }
 
+    enum ProposalState {
+        PENDING,
+        OWNER_APPROVED,
+        APPROVED,
+        CANCELED,
+        COMPLETED
+    }
+
     struct ProjectCore {
         uint256 projectTokenId;
         uint256 projectHash;
@@ -36,18 +44,20 @@ contract Task {
         Timers.BlockNumber startWorkPeriod;
         Timers.BlockNumber endWorkPeriod;
         ProposalCore[] proposals;
-        uint256 ownerBudgetAmount;
+        uint256 amountFunded;
         uint256 winningProposalIndex;
     }
 
     struct ProposalCore {
         uint256 memberTokenId;
         uint256 proposalHash;
-        uint256 proposalAmountNeeded;
         uint256 requestedTimeSpan;
+        ProposalState proposalState;
     }
 
     mapping(uint256 => ProjectCore) private _projects;
+
+    uint256 private _balance;
 
     address private _membersAddress;
     IProjectToken private _projectToken;
@@ -71,6 +81,13 @@ contract Task {
         _;
     }
 
+    modifier onlyProposer(uint256 projectTokenId, uint256 proposalIndex){
+        ProposalCore storage proposal = _projects[projectTokenId].proposals[proposalIndex];
+        address proposer = Members(_membersAddress).ownerOf(proposal.memberTokenId);
+        require(msg.sender == proposer, "Only proposer can cancel proposal");
+        _;
+    }
+
     modifier isPending(uint256 tokenId) {
         require(
             _projects[tokenId].projectState == ProjectState.PENDING,
@@ -79,20 +96,19 @@ contract Task {
         _;
     }
 
+    // --- Project Functions ---
+
     function createProject(
         string memory projectName,
-        string memory summary,
-        uint256 ownerBudgetAmount
-    ) public {
+        string memory summary
+    ) public payable {
        uint256 tokenId = _projectToken.mintProject(msg.sender);
-
         ProjectCore storage core = _projects[tokenId];
         core.projectHash = generateProjectHash(projectName, summary);
         core.projectTokenId = tokenId;
         core.projectState = ProjectState.PENDING;
-        core.ownerBudgetAmount = ownerBudgetAmount;
-
-
+        core.amountFunded = msg.value;
+        _balance += msg.value;
         emit ProjectCreated(tokenId);
     }
 
@@ -109,13 +125,15 @@ contract Task {
         );
     }
 
-    function updateProjectAmount(
-        uint256 tokenId,
-        uint256 amount
-    ) public isPending(tokenId) {
-        address owner = _projectToken.ownerOf(tokenId);
-        require(msg.sender == owner, "Only owner of project token can update");
-        _projects[tokenId].ownerBudgetAmount = amount;
+    function increaseProjectFunding(
+        uint256 projectTokenId
+    ) public onlyOwner(projectTokenId) payable {
+        require(
+            _projects[projectTokenId].projectState == ProjectState.PENDING,
+            "Project must be in a pending state"
+        );
+        _balance += msg.value;
+        _projects[projectTokenId].amountFunded += msg.value;
     }
 
     function generateProjectHash(
@@ -125,16 +143,50 @@ contract Task {
         return uint256(keccak256(abi.encode(projectName, projectSummary)));
     }
 
+    function projectState(
+        uint256 projectTokenId
+    ) public view returns (ProjectState) {
+        ProjectCore storage project = _projects[projectTokenId];
+        return project.projectState;
+    }
+
+    function getProjectDetails(uint256 projectTokenId) public view returns (ProjectCore memory) {
+        return _projects[projectTokenId];
+    }
+
+    function completeProject(uint256 tokenId) public onlyOwner(tokenId) {
+        ProjectCore storage core = _projects[tokenId];
+        require(
+            core.projectState == ProjectState.ASSIGNED || core.projectState == ProjectState.DISPUTED,
+            "Project must be in an assigned or disputed state"
+        );
+        core.projectState = ProjectState.COMPLETED;
+        uint256 proposerTokenId = core.proposals[core.winningProposalIndex].memberTokenId;
+        address proposer = Members(_membersAddress).ownerOf(proposerTokenId);
+        transferFunds(proposer, core.amountFunded);
+    }
+
+    function cancelProject(uint256 tokenId) public onlyOwner(tokenId) {
+        ProjectCore storage core = _projects[tokenId];
+        require(
+            core.projectState == ProjectState.PENDING || core.projectState == ProjectState.DISPUTED,
+            "Project must be in a pending or disputed state"
+        );
+        core.projectState = ProjectState.CANCELED;
+        transferFunds(msg.sender, core.amountFunded);
+    }
+
+    // --- Proposal Functions ---
+
     function createProposal(
         uint256 memberTokenId,
         uint256 projectId,
         string memory summary,
-        uint256 amountNeeded,
         uint256 timeNeeded
     ) public onlyMemberTokenHolder(memberTokenId) isPending(projectId) {
         ProposalCore memory core;
+        core.proposalState = ProposalState.PENDING;
         core.memberTokenId = memberTokenId;
-        core.proposalAmountNeeded = amountNeeded;
         core.requestedTimeSpan = timeNeeded;
         core.proposalHash = generateProposalHash(summary, projectId, memberTokenId);
         uint256 proposalId = _projects[projectId].proposals.length;
@@ -154,42 +206,48 @@ contract Task {
         uint256 projectTokenId,
         uint256 proposalIndex,
         string memory summary,
-        uint256 amountNeeded,
         uint256 timeNeeded
-    ) public isPending(projectTokenId) {
+    ) public onlyProposer(projectTokenId, proposalIndex) isPending(projectTokenId) {
         ProposalCore storage core = _projects[projectTokenId].proposals[
             proposalIndex
         ];
-        Members member = Members(_membersAddress);
-        require(
-            msg.sender == member.ownerOf(core.memberTokenId),
-            "Proposal does not belong to member"
-        );
         core.proposalHash = generateProposalHash(
             summary,
             projectTokenId,
             proposalIndex
         );
-        core.proposalAmountNeeded = amountNeeded;
         core.requestedTimeSpan = timeNeeded;
+    }
+
+    function completeProposal(uint256 projectTokenId, uint256 proposalIndex) public  {
+        ProjectCore storage project = _projects[projectTokenId];
+        require(
+            project.projectState == ProjectState.ASSIGNED,
+            "Project must be in an assigned state"
+        );
+        ProposalCore storage proposal = project.proposals[proposalIndex];
+        address proposer = Members(_membersAddress).ownerOf(proposal.memberTokenId);
+        require(msg.sender == proposer, "Only proposer can complete proposal");
+        require(
+            proposal.proposalState == ProposalState.APPROVED,
+            "Proposal must be in an approved state"
+        );
+        proposal.proposalState = ProposalState.COMPLETED;
     }
 
     function cancelProposal(
         uint256 projectTokenId,
         uint256 proposalIndex
-    ) public onlyOwner(projectTokenId) {
+    ) public {
         ProjectCore storage project = _projects[projectTokenId];
-        require(project.winningProposalIndex != proposalIndex, "Cannot cancel winning proposal");
-        delete project.proposals[proposalIndex];    
-    }
-
-    function completeProposal(uint256 tokenId) public onlyOwner(tokenId) {
-        ProjectCore storage core = _projects[tokenId];
         require(
-            core.projectState == ProjectState.ASSIGNED,
-            "Project must be in an assigned state"
+            project.projectState == ProjectState.PENDING,
+            "Project must be in a pending state"
         );
-        core.projectState = ProjectState.COMPLETED;
+        ProposalCore storage proposal = project.proposals[proposalIndex];
+        address proposer = Members(_membersAddress).ownerOf(proposal.memberTokenId);
+        require(msg.sender == proposer, "Only proposer can cancel proposal");
+        proposal.proposalState = ProposalState.CANCELED;
     }
 
     function disputeProposal(uint256 tokenId, string memory reason) public onlyOwner(tokenId) {
@@ -202,10 +260,16 @@ contract Task {
         emit Dispute(tokenId, reason);
     }
 
+    function ownerApproveProposal(uint256 projectTokenId, uint256 proposalIndex) public onlyOwner(projectTokenId) isPending(projectTokenId) {
+        ProjectCore storage core = _projects[projectTokenId];
+        ProposalCore storage proposal = core.proposals[proposalIndex];
+        proposal.proposalState = ProposalState.OWNER_APPROVED;
+    }
+
     function approveProposal(
         uint256 projectTokenId,
         uint256 proposalIndex
-    ) public isPending(projectTokenId) onlyOwner(projectTokenId) {
+    ) public isPending(projectTokenId) onlyProposer(projectTokenId, proposalIndex) {
         ProjectCore storage core = _projects[projectTokenId];
         uint64 snapshot = block.number.toUint64();
         core.winningProposalIndex = proposalIndex;
@@ -218,14 +282,29 @@ contract Task {
         core.endWorkPeriod.setDeadline(
             snapshot + requestedTimeSpan
         );
-        
+        core.proposals[proposalIndex].proposalState = ProposalState.APPROVED; 
     }
 
-    function projectState(
-        uint256 projectTokenId
-    ) public view returns (ProjectState) {
-        ProjectCore storage project = _projects[projectTokenId];
-        return project.projectState;
+    function getProposalDetails(uint256 projectTokenId, uint256 proposalIndex) public view returns (ProposalCore memory) {
+        return _projects[projectTokenId].proposals[proposalIndex];
+    }
+
+
+    // --- Utility Functions ---
+
+    function transferFunds(address recipient, uint256 amount) private {
+        require(address(this).balance >= amount, "Not enough balance");
+        require(_balance >= amount, "Not enough _balance");
+        
+        // If checks pass, proceed with the transfer
+        payable(recipient).transfer(amount);
+        
+        // Then, update the balance
+        _balance -= amount;
+    }
+
+    function getTotalBalance() public view returns (uint256) {
+        return _balance;
     }
 
 
