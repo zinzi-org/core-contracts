@@ -160,6 +160,8 @@ contract Task {
             core.projectState == ProjectState.ASSIGNED || core.projectState == ProjectState.DISPUTED,
             "Project must be in an assigned or disputed state"
         );
+        ProposalCore storage proposal = core.proposals[core.winningProposalIndex];
+        require(proposal.proposalState == ProposalState.COMPLETED, "Proposal must be in a completed state");
         core.projectState = ProjectState.COMPLETED;
         uint256 proposerTokenId = core.proposals[core.winningProposalIndex].memberTokenId;
         address proposer = Members(_membersAddress).ownerOf(proposerTokenId);
