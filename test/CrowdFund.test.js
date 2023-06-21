@@ -18,11 +18,11 @@ describe("Crowd Loan Test Cases", () => {
         var membersAddress = await factoryContract.membersAddress();
 
         const projectTokenFactory = await ethers.getContractFactory("ProjectToken");
-        let projectTokenContract = await projectTokenFactory.deploy();
+        let projectTokenContract = await projectTokenFactory.deploy(membersAddress);
         projectTokenContract = projectTokenContract.connect(signers[0]);
-
+        let crowdFundAddress = await projectTokenContract.getCrowdFundAddress();
         const crowdFundFactory = await ethers.getContractFactory("CrowdFund");
-        let crowdFundContract = await crowdFundFactory.deploy(membersAddress, projectTokenContract.address);
+        let crowdFundContract = await crowdFundFactory.attach(crowdFundAddress);
 
         const membersFactory = await ethers.getContractFactory("Members");
         let membersContract = membersFactory.attach(membersAddress);

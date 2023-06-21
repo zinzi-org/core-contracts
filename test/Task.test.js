@@ -18,11 +18,12 @@ describe("Task Test Cases", () => {
         var membersAddress = await factoryContract.membersAddress();
 
         const projectTokenFactory = await ethers.getContractFactory("ProjectToken");
-        let projectTokenContract = await projectTokenFactory.deploy();
+        let projectTokenContract = await projectTokenFactory.deploy(membersAddress);
         projectTokenContract = projectTokenContract.connect(signers[0]);
 
         const taskFactory = await ethers.getContractFactory("Task");
-        let taskContract = await taskFactory.deploy(membersAddress, projectTokenContract.address);
+        let taskAddress = await projectTokenContract.getTaskAddress();
+        let taskContract = await taskFactory.attach(taskAddress);
 
         const membersFactory = await ethers.getContractFactory("Members");
         let membersContract = membersFactory.attach(membersAddress);

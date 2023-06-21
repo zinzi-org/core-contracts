@@ -13,6 +13,8 @@ import "../lib/SafeCast.sol";
 import "../lib/Math.sol";
 import "../Organizations/Members.sol";
 import "./Task.sol";
+import "./CrowdFund.sol";
+
 
 interface IProjectToken is IERC721  {
 
@@ -30,8 +32,8 @@ contract ProjectToken is ERC165, IERC721, IERC721Metadata, IProjectToken {
 
     string public _projectMetaURL = "https://www.zini.org/project/";
 
-    string public name = "Project";
-    string public symbol = "PRJ";
+    string private _name = "Project";
+    string private _symbol = "PRJ";
 
     uint256 public _count = 0;
 
@@ -42,7 +44,60 @@ contract ProjectToken is ERC165, IERC721, IERC721Metadata, IProjectToken {
     mapping(uint256 => address) private _tokenApprovals;
     mapping(address => mapping(address => bool)) private _operatorApprovals;
 
-    function mintProject(address owner) public returns (uint256) {
+    mapping(address => bool) private _approvedMinters;
+
+    address immutable _boardAddress;
+
+    address immutable _membersAddress;
+
+    address immutable _crowdFundAddress;
+
+    address immutable _taskAddress;
+
+    constructor(address members_) {
+        address task = address(new Task(members_, address(this)));
+        _taskAddress = task;
+        _approvedMinters[task] = true;
+        _boardAddress = msg.sender;
+        _membersAddress = members_;
+        address crowd = address(new CrowdFund(_membersAddress,address(this)));
+        _crowdFundAddress = crowd;
+        _approvedMinters[crowd] = true;
+    }
+
+    modifier onlyMinter() {
+        require(
+            _approvedMinters[msg.sender],
+            "ProjectToken: caller is not a minter"
+        );
+        _;
+    }
+
+    function name () public view virtual returns (string memory) {
+        return _name;
+    }
+
+    function symbol () public view virtual returns (string memory) {
+        return _symbol;
+    }
+
+    function getTaskAddress() public view returns (address) {
+        return _taskAddress;
+    }
+
+    function getBoardAddress() public view returns (address) {
+        return _boardAddress;
+    }
+
+    function getMembersAddress() public view returns (address) {
+        return _membersAddress;
+    }
+
+    function getCrowdFundAddress() public view returns (address) {
+        return _crowdFundAddress;
+    }
+     
+    function mintProject(address owner) onlyMinter public returns (uint256) {
         _safeMint(owner, _count);
         _tokenParent[_count] = msg.sender;
         _count += 1;
