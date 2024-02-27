@@ -37,7 +37,7 @@ describe("Crowd Loan Test Cases", () => {
         let boardContract = boardFactory.attach(boardAddress);
         boardContract = boardContract.connect(signers[0]);
 
-        const memberVotesAddress = boardContract.getMemberVotesAddress();
+        const memberVotesAddress = await boardContract.getMemberVotesAddress();
         const memberVotesFactory = await ethers.getContractFactory("MemberVote");
         let memberVotesContract = memberVotesFactory.attach(memberVotesAddress);
         memberVotesContract = memberVotesContract.connect(signers[0]);

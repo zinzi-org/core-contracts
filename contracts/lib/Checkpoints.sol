@@ -2,7 +2,7 @@
 // OpenZeppelin Contracts (last updated v4.5.0) (utils/Checkpoints.sol)
 // This file was procedurally generated from scripts/generate/templates/Checkpoints.js.
 
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.22;
 
 import "./Math.sol";
 import "./SafeCast.sol";

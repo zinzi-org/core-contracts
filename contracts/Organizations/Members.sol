@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v4.7.0) (token/ERC721/ERC721.sol)
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.22;
 
 import "../lib/IERC721.sol";
 import "../lib/IERC721Receiver.sol";
@@ -9,7 +9,6 @@ import "./GovernorBoardFactory.sol";
 import "./GovernorBoard.sol";
 import "../lib/Strings.sol";
 import "../lib/ERC165.sol";
-import "./Member.sol";
 
 contract Members is ERC165, IERC721, IERC721Metadata {
     using Strings for uint256;
@@ -197,13 +196,6 @@ contract Members is ERC165, IERC721, IERC721Metadata {
             "Only Governor Contract can burn tokens"
         );
         _burn(tokenId);
-    }
-
-    function initMemberMetaPackage(uint256 tokenId) public returns(address) {
-        require(msg.sender == _owners[tokenId], "Only token owner can init member meta package");
-        address memberMetaContract = address(new Member(msg.sender, tokenId));
-        _tokenIdToMetaAddress[tokenId] = memberMetaContract;
-        return memberMetaContract;
     }
 
     function getMemberMetaAddress(uint256 tokenId) public view returns(address) {

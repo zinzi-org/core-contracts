@@ -38,7 +38,7 @@ describe("Task Test Cases", () => {
         let boardContract = boardFactory.attach(boardAddress);
         boardContract = boardContract.connect(signers[0]);
 
-        const memberVotesAddress = boardContract.getMemberVotesAddress();
+        const memberVotesAddress = await boardContract.getMemberVotesAddress();
         const memberVotesFactory = await ethers.getContractFactory("MemberVote");
         let memberVotesContract = memberVotesFactory.attach(memberVotesAddress);
         memberVotesContract = memberVotesContract.connect(signers[0]);
@@ -60,6 +60,7 @@ describe("Task Test Cases", () => {
             , { gasLimit: 1000000, value: 10000000 }
         );
         const rcMint = await propTx.wait();
+        console.log(rcMint);
         const eventMint = rcMint.events.find(event => event.event === "ProjectCreated");
         const [projectTokenId] = eventMint.args;
 
@@ -92,7 +93,7 @@ describe("Task Test Cases", () => {
 
         expect(proposalDetails.proposalHash).to.equal(proposalHash);
 
-        let approveTx = await taskContract.populateTransaction.ownerApproveProposal(projectTokenId, proposalId);
+        let approveTx = await taskContract.ownerApproveProposal.populateTransaction(projectTokenId, proposalId);
         gasEstimate = await ethers.provider.estimateGas(approveTx);
         approveTx.gasLimit = gasEstimate;
         let txResponse = await signers[0].sendTransaction(approveTx);
@@ -127,7 +128,7 @@ describe("Task Test Cases", () => {
 
         var projectDetailsInitial = await taskContract.getProjectDetails(projectTokenId);
 
-        var updateHashTx = await taskContract.populateTransaction.updateProjectHash(
+        var updateHashTx = await taskContract.updateProjectHash.populateTransaction(
             projectTokenId,
             "Run digital advertising campaign",
             "I need someone to run a digital adveritising campaign with pictures of my dog. I want to target people who like dogs and live in Baltimore");
@@ -160,7 +161,7 @@ describe("Task Test Cases", () => {
 
         expect(projectDetailsInitial.projectHash).to.equal(projectHash);
 
-        var updateHashTx = await taskContract.populateTransaction.increaseProjectFunding(
+        var updateHashTx = await taskContract.increaseProjectFunding.populateTransaction(
             projectTokenId, {value: 10000000}
             );
         gasEstimate = await ethers.provider.estimateGas(updateHashTx);
@@ -202,7 +203,7 @@ describe("Task Test Cases", () => {
         var proposalDetailsInitial = await taskContract.getProposalDetails(projectTokenId, proposalId);
 
 
-        var updateHashTx = await taskContractInst.populateTransaction.updateProposal(
+        var updateHashTx = await taskContractInst.updateProposal.populateTransaction(
                 projectTokenId,
                 proposalId,
                 "I will do this because im kinda of smart",
@@ -253,7 +254,7 @@ describe("Task Test Cases", () => {
 
         expect(proposalDetailsInitial.proposalState).to.equal(0);
 
-        var cancelProposalTx = await taskContractInst.populateTransaction.cancelProposal(
+        var cancelProposalTx = await taskContractInst.cancelProposal.populateTransaction(
             projectTokenId,
             proposalId
         );
@@ -313,7 +314,7 @@ describe("Task Test Cases", () => {
 
         expect(proposalDetails.proposalHash).to.equal(proposalHash);
 
-        let approveTx = await taskContract.populateTransaction.ownerApproveProposal(projectTokenId, proposalId);
+        let approveTx = await taskContract.ownerApproveProposal.populateTransaction(projectTokenId, proposalId);
         gasEstimate = await ethers.provider.estimateGas(approveTx);
         approveTx.gasLimit = gasEstimate;
         let txResponse = await signers[0].sendTransaction(approveTx);
@@ -322,7 +323,7 @@ describe("Task Test Cases", () => {
         var state = await taskContract.projectState(projectTokenId);
         expect(state).to.equal(0);
 
-        let propCreatorApproveTx = await taskContractInst.populateTransaction.approveProposal(projectTokenId, proposalId);
+        let propCreatorApproveTx = await taskContractInst.approveProposal.populateTransaction(projectTokenId, proposalId);
         gasEstimate = await ethers.provider.estimateGas(propCreatorApproveTx);
         propCreatorApproveTx.gasLimit = gasEstimate;
         let propCreatorTxResponse = await signers[1].sendTransaction(propCreatorApproveTx);
@@ -332,7 +333,7 @@ describe("Task Test Cases", () => {
 
         expect(stateApproved).to.equal(1);
 
-        var completeProposalTx = await taskContractInst.populateTransaction.completeProposal(
+        var completeProposalTx = await taskContractInst.completeProposal.populateTransaction(
             projectTokenId,
             proposalId
         );
@@ -345,7 +346,7 @@ describe("Task Test Cases", () => {
         var usersBalance = await ethers.provider.getBalance(signers[1].address);
 
 
-        var ownerCompleteProposalTx = await taskContract.populateTransaction.completeProject(
+        var ownerCompleteProposalTx = await taskContract.completeProject.populateTransaction(
             projectTokenId
         );
 
@@ -383,9 +384,9 @@ describe("Task Test Cases", () => {
         );
         const rcMint = await propTx.wait();
         
-        let gasPrice = await ethers.provider.getGasPrice();  // Fetch the current gas price
+        let gasPrice = await ethers.provider.getFeeData().gasPrice;  // Fetch the current gas price
 
-        let etherSpentOnGasFirst = rcMint.gasUsed.mul(gasPrice);  
+        let etherSpentOnGasFirst = rcMint.gasUsed * rcMint.effectiveGasPrice ; 
 
         const eventMint = rcMint.events.find(event => event.event === "ProjectCreated");
         const [projectTokenId] = eventMint.args;
@@ -394,7 +395,7 @@ describe("Task Test Cases", () => {
 
         expect(totalBalance).to.equal(10000000);
 
-        var canceTx = await taskContract.populateTransaction.cancelProject(
+        var canceTx = await taskContract.cancelProject.populateTransaction(
             projectTokenId
         );
 

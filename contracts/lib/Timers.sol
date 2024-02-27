@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts v4.4.1 (utils/Timers.sol)
 
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.22;
 
 /**
  * @dev Tooling for timepoints, timers and delays
