@@ -4,6 +4,7 @@
 pragma solidity ^0.8.22;
 
 
+
 import "../lib/Strings.sol";
 import "../lib/Timers.sol";
 import "../lib/SafeCast.sol";
@@ -16,6 +17,15 @@ contract Task {
     event ProjectCreated(uint256 projectTokenId);
     event Proposal( uint256 projectTokenId, uint256 memberTokenId, uint256 proposalId );
     event Dispute(uint256 projectTokenId, string reason);
+
+    event ProjectUpdated(uint256 projectTokenId, uint256 projectHash, ProjectState state);
+    event ProjectFundingIncreased(uint256 projectTokenId, uint256 amountAdded, uint256 newTotalAmount);
+    event ProjectCompleted(uint256 projectTokenId);
+    event ProjectCanceled(uint256 projectTokenId);
+    event ProposalUpdated(uint256 projectTokenId, uint256 proposalIndex, uint256 proposalHash, ProposalState state);
+    event ProposalCompleted(uint256 projectTokenId, uint256 proposalIndex);
+    event ProposalCanceled(uint256 projectTokenId, uint256 proposalIndex);
+    event ProposalApproved(uint256 projectTokenId, uint256 proposalIndex);
 
     using Timers for Timers.BlockNumber;
     using SafeCast for uint256;
@@ -83,8 +93,9 @@ contract Task {
 
     modifier onlyProposer(uint256 projectTokenId, uint256 proposalIndex){
         ProposalCore storage proposal = _projects[projectTokenId].proposals[proposalIndex];
-        address proposer = Members(_membersAddress).ownerOf(proposal.memberTokenId);
-        require(msg.sender == proposer, "Only proposer can cancel proposal");
+        Members members = Members(_membersAddress);
+        address proposer = members.ownerOf(proposal.memberTokenId);
+        require(msg.sender == proposer, "Only proposer can run this function");
         _;
     }
 
@@ -102,7 +113,7 @@ contract Task {
         string memory projectName,
         string memory summary
     ) public payable {
-       uint256 tokenId = _projectToken.mintProject(msg.sender);
+        uint256 tokenId = _projectToken.mintProject(msg.sender);
         ProjectCore storage core = _projects[tokenId];
         core.projectHash = generateProjectHash(projectName, summary);
         core.projectTokenId = tokenId;
@@ -134,6 +145,7 @@ contract Task {
         );
         _balance += msg.value;
         _projects[projectTokenId].amountFunded += msg.value;
+        emit ProjectFundingIncreased(projectTokenId, msg.value, _projects[projectTokenId].amountFunded);
     }
 
     function generateProjectHash(
@@ -166,6 +178,7 @@ contract Task {
         uint256 proposerTokenId = core.proposals[core.winningProposalIndex].memberTokenId;
         address proposer = Members(_membersAddress).ownerOf(proposerTokenId);
         transferFunds(proposer, core.amountFunded);
+        emit ProjectCompleted(tokenId);
     }
 
     function cancelProject(uint256 tokenId) public onlyOwner(tokenId) {
@@ -176,6 +189,7 @@ contract Task {
         );
         core.projectState = ProjectState.CANCELED;
         transferFunds(msg.sender, core.amountFunded);
+        emit ProjectCanceled(tokenId);
     }
 
     // --- Proposal Functions ---
@@ -219,6 +233,7 @@ contract Task {
             proposalIndex
         );
         core.requestedTimeSpan = timeNeeded;
+        emit ProposalUpdated(projectTokenId, proposalIndex, core.proposalHash, core.proposalState);
     }
 
     function completeProposal(uint256 projectTokenId, uint256 proposalIndex) public  {
@@ -235,6 +250,7 @@ contract Task {
             "Proposal must be in an approved state"
         );
         proposal.proposalState = ProposalState.COMPLETED;
+        emit ProposalCompleted(projectTokenId, proposalIndex);
     }
 
     function cancelProposal(
@@ -250,6 +266,7 @@ contract Task {
         address proposer = Members(_membersAddress).ownerOf(proposal.memberTokenId);
         require(msg.sender == proposer, "Only proposer can cancel proposal");
         proposal.proposalState = ProposalState.CANCELED;
+        emit ProposalCanceled(projectTokenId, proposalIndex);
     }
 
     function disputeProposal(uint256 tokenId, string memory reason) public onlyOwner(tokenId) {
@@ -266,6 +283,7 @@ contract Task {
         ProjectCore storage core = _projects[projectTokenId];
         ProposalCore storage proposal = core.proposals[proposalIndex];
         proposal.proposalState = ProposalState.OWNER_APPROVED;
+        emit ProposalUpdated(projectTokenId, proposalIndex, proposal.proposalHash, proposal.proposalState);
     }
 
     function approveProposal(
@@ -285,6 +303,7 @@ contract Task {
             snapshot + requestedTimeSpan
         );
         core.proposals[proposalIndex].proposalState = ProposalState.APPROVED; 
+        emit ProposalApproved(projectTokenId, proposalIndex);
     }
 
     function getProposalDetails(uint256 projectTokenId, uint256 proposalIndex) public view returns (ProposalCore memory) {
@@ -297,12 +316,13 @@ contract Task {
     function transferFunds(address recipient, uint256 amount) private {
         require(address(this).balance >= amount, "Not enough balance");
         require(_balance >= amount, "Not enough _balance");
-        
+
+         _balance -= amount;
         // If checks pass, proceed with the transfer
         payable(recipient).transfer(amount);
         
         // Then, update the balance
-        _balance -= amount;
+       
     }
 
     function getTotalBalance() public view returns (uint256) {

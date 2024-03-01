@@ -60,9 +60,8 @@ describe("Task Test Cases", () => {
             , { gasLimit: 1000000, value: 10000000 }
         );
         const rcMint = await propTx.wait();
-        console.log(rcMint);
-        const eventMint = rcMint.events.find(event => event.event === "ProjectCreated");
-        const [projectTokenId] = eventMint.args;
+
+        const projectTokenId = rcMint.logs[1].args[0];
 
         var balance = await taskContract.getTotalBalance();
 
@@ -71,25 +70,25 @@ describe("Task Test Cases", () => {
         let taskContractInst = taskContract.connect(signers[1]);
 
 
-        var tokenId = await membersContract.getTokenId(signers[1].address);
+        var memberTokenId = await membersContract.getTokenId(signers[1].address);
 
         var proposalTx = await taskContractInst.createProposal(
-            tokenId,
+            memberTokenId,
             projectTokenId,
             "I will do this because im smart",
             8000,
             { gasLimit: 1000000 }
         );
         const rc = await proposalTx.wait();
-        const event = rc.events.find(event => event.event === 'Proposal');
-        const [proposalId] = event.args;
+    
+        const proposalId =  rc.logs[0].args[2];
 
         var proposalDetails = await taskContractInst.getProposalDetails(projectTokenId, proposalId);
 
         var projectDetailsInitial = await taskContract.getProjectDetails(projectTokenId);
         expect(projectDetailsInitial.amountFunded).to.equal(10000000);
 
-        var proposalHash = await taskContractInst.generateProposalHash("I will do this because im smart", projectTokenId, tokenId);
+        var proposalHash = await taskContractInst.generateProposalHash("I will do this because im smart", projectTokenId, memberTokenId);
 
         expect(proposalDetails.proposalHash).to.equal(proposalHash);
 
@@ -102,9 +101,9 @@ describe("Task Test Cases", () => {
         var state = await taskContract.projectState(projectTokenId);
         expect(state).to.equal(0);
 
-        let propCreatorApproveTx = await taskContractInst.populateTransaction.approveProposal(projectTokenId, proposalId);
-        gasEstimate = await ethers.provider.estimateGas(propCreatorApproveTx);
-        propCreatorApproveTx.gasLimit = gasEstimate;
+
+        let propCreatorApproveTx = await taskContractInst.approveProposal.populateTransaction(projectTokenId, proposalId);
+
         let propCreatorTxResponse = await signers[1].sendTransaction(propCreatorApproveTx);
         await propCreatorTxResponse.wait();
 
@@ -123,9 +122,10 @@ describe("Task Test Cases", () => {
             , { gasLimit: 1000000, value: 10000000 }
         );
         const rcMint = await propTx.wait();
-        const eventMint = rcMint.events.find(event => event.event === "ProjectCreated");
-        const [projectTokenId] = eventMint.args;
 
+       
+        
+        const projectTokenId = rcMint.logs[1].args[0];
         var projectDetailsInitial = await taskContract.getProjectDetails(projectTokenId);
 
         var updateHashTx = await taskContract.updateProjectHash.populateTransaction(
@@ -152,8 +152,8 @@ describe("Task Test Cases", () => {
             , { gasLimit: 1000000, value: 10000000 }
         );
         const rcMint = await propTx.wait();
-        const eventMint = rcMint.events.find(event => event.event === "ProjectCreated");
-        const [projectTokenId] = eventMint.args;
+       
+        const projectTokenId = rcMint.logs[1].args[0];
 
         var projectDetailsInitial = await taskContract.getProjectDetails(projectTokenId);
 
@@ -182,8 +182,8 @@ describe("Task Test Cases", () => {
             , { gasLimit: 1000000, value: 10000000 }
         );
         const rcMint = await propTx.wait();
-        const eventMint = rcMint.events.find(event => event.event === "ProjectCreated");
-        const [projectTokenId] = eventMint.args;
+        
+        const projectTokenId = rcMint.logs[1].args[0];
 
         let taskContractInst = taskContract.connect(signers[1]);
 
@@ -197,8 +197,8 @@ describe("Task Test Cases", () => {
             { gasLimit: 1000000 }
         );
         const rc = await proposalTx.wait();
-        const event = rc.events.find(event => event.event === 'Proposal');
-        const [proposalId] = event.args;
+       
+        const proposalId =  rc.logs[0].args[2];
 
         var proposalDetailsInitial = await taskContract.getProposalDetails(projectTokenId, proposalId);
 
@@ -210,8 +210,8 @@ describe("Task Test Cases", () => {
                 8000
             );
 
-        gasEstimate = await ethers.provider.estimateGas(updateHashTx);
-        updateHashTx.gasLimit = gasEstimate;
+        // gasEstimate = await ethers.provider.estimateGas(updateHashTx);
+        // updateHashTx.gasLimit = gasEstimate;
         let updateResponse = await signers[1].sendTransaction(updateHashTx);
         await updateResponse.wait();
 
@@ -232,8 +232,8 @@ describe("Task Test Cases", () => {
             , { gasLimit: 1000000, value: 10000000 }
         );
         const rcMint = await propTx.wait();
-        const eventMint = rcMint.events.find(event => event.event === "ProjectCreated");
-        const [projectTokenId] = eventMint.args;
+        
+        const projectTokenId = rcMint.logs[1].args[0];
 
         let taskContractInst = taskContract.connect(signers[1]);
 
@@ -247,8 +247,8 @@ describe("Task Test Cases", () => {
             { gasLimit: 1000000 }
         );
         const rc = await proposalTx.wait();
-        const event = rc.events.find(event => event.event === 'Proposal');
-        const [proposalId] = event.args;
+       
+        const proposalId =  rc.logs[0].args[2];
 
         var proposalDetailsInitial = await taskContract.getProposalDetails(projectTokenId, proposalId);
 
@@ -259,8 +259,8 @@ describe("Task Test Cases", () => {
             proposalId
         );
 
-        gasEstimate = await ethers.provider.estimateGas(cancelProposalTx);
-        cancelProposalTx.gasLimit = gasEstimate;
+        // gasEstimate = await ethers.provider.estimateGas(cancelProposalTx);
+        // cancelProposalTx.gasLimit = gasEstimate;
         let cancelResponse = await signers[1].sendTransaction(cancelProposalTx);
         await cancelResponse.wait();
 
@@ -283,8 +283,8 @@ describe("Task Test Cases", () => {
             , { gasLimit: 1000000, value: 10000000 }
         );
         const rcMint = await propTx.wait();
-        const eventMint = rcMint.events.find(event => event.event === "ProjectCreated");
-        const [projectTokenId] = eventMint.args;
+        
+        const projectTokenId = rcMint.logs[1].args[0];
 
         var totalBalance = await taskContract.getTotalBalance();
 
@@ -302,8 +302,8 @@ describe("Task Test Cases", () => {
             { gasLimit: 1000000 }
         );
         const rc = await proposalTx.wait();
-        const event = rc.events.find(event => event.event === 'Proposal');
-        const [proposalId] = event.args;
+       
+        const proposalId =  rc.logs[0].args[2];
 
         var proposalDetails = await taskContractInst.getProposalDetails(projectTokenId, proposalId);
 
@@ -324,11 +324,11 @@ describe("Task Test Cases", () => {
         expect(state).to.equal(0);
 
         let propCreatorApproveTx = await taskContractInst.approveProposal.populateTransaction(projectTokenId, proposalId);
-        gasEstimate = await ethers.provider.estimateGas(propCreatorApproveTx);
-        propCreatorApproveTx.gasLimit = gasEstimate;
+        // gasEstimate = await taskContractInst.provider.estimateGas(propCreatorApproveTx);
+        // propCreatorApproveTx.gasLimit = gasEstimate;
         let propCreatorTxResponse = await signers[1].sendTransaction(propCreatorApproveTx);
         await propCreatorTxResponse.wait();
-
+        
         var stateApproved = await taskContract.projectState(projectTokenId);
 
         expect(stateApproved).to.equal(1);
@@ -338,8 +338,8 @@ describe("Task Test Cases", () => {
             proposalId
         );
 
-        gasEstimate = await ethers.provider.estimateGas(completeProposalTx);
-        completeProposalTx.gasLimit = gasEstimate;
+        // gasEstimate = await ethers.provider.estimateGas(completeProposalTx);
+        // completeProposalTx.gasLimit = gasEstimate;
         let completeResponse = await signers[1].sendTransaction(completeProposalTx);
         await completeResponse.wait();
 
@@ -383,13 +383,10 @@ describe("Task Test Cases", () => {
             , { gasLimit: 1000000, value: 10000000 }
         );
         const rcMint = await propTx.wait();
-        
-        let gasPrice = await ethers.provider.getFeeData().gasPrice;  // Fetch the current gas price
 
-        let etherSpentOnGasFirst = rcMint.gasUsed * rcMint.effectiveGasPrice ; 
+        let etherSpentOnGasFirst = rcMint.gasUsed * rcMint.gasPrice;
 
-        const eventMint = rcMint.events.find(event => event.event === "ProjectCreated");
-        const [projectTokenId] = eventMint.args;
+        const projectTokenId = rcMint.logs[1].args[0];
 
         var totalBalance = await taskContract.getTotalBalance();
 
@@ -408,7 +405,8 @@ describe("Task Test Cases", () => {
         let cancelResponse = await signers[0].sendTransaction(canceTx);
         var cancelResponseTx = await cancelResponse.wait();
 
-        let etherSpentOnGasSecond = cancelResponseTx.gasUsed.mul(gasPrice);  
+
+        let etherSpentOnGasSecond = cancelResponseTx.gasUsed * cancelResponseTx.gasPrice;
         const BigNumber = require('bignumber.js');
        
         var usersBalanceAfter = await ethers.provider.getBalance(signers[0].address);

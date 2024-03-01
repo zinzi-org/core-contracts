@@ -74,7 +74,7 @@ describe("Gov Org Test Cases", () => {
         const { factoryContract, membersContract, boardContract, memberVotesContract, signers } = await loadFixture(fixture);
 
         let boardContractInst = boardContract.connect(signers[1]);
-        let tx = await boardContractInst.propose.populateTransaction("test text", 0, ethers.AddressZero, 0, 0);
+        let tx = await boardContractInst.propose.populateTransaction("test text", 0, signers[1].address, 0, 0);
         tx.gasLimit = 100000;
         await expect(signers[1].sendTransaction(tx)).to.be.revertedWith("Not enough voting power to create proposal");
     });
@@ -93,9 +93,8 @@ describe("Gov Org Test Cases", () => {
         }
 
         let boardContractInst = boardContract.connect(signers[1]);
-        let txp = await boardContractInst.propose.populateTransaction("test text", 0, ethers.AddressZero, 0, 0);
-        let gasEstimatep = await ethers.provider.estimateGas(txp);
-        txp.gasLimit = gasEstimatep;
+        let txp = await boardContractInst.propose.populateTransaction("test text", 0, signers[1].address , 0, 0);
+
         let txResponsep = await signers[1].sendTransaction(txp);
         await txResponsep.wait();
     });
@@ -128,16 +127,15 @@ describe("Gov Org Test Cases", () => {
        
         let proposalTxReal = await boardContractInst.propose("Proposal to Add Governor", 1, signers[1].address, 0, 0, { gasLimit: gasEstimate.value });   
         const rc = await proposalTxReal.wait();
-       
-        const event = rc.events.find(event => event.event === 'Proposal');
-        const [proposalId] = event.args;
+
+        const proposalId = rc.logs[0].args[0]
 
         for (let i = 2; i < 17; i++) {
             boardContractInst = boardContractInst.connect(signers[i]);
             var bn = await ethers.provider.getBlockNumber();
             var votesN = await boardContractInst.getVotes(signers[i].address, (bn - 1))
             if (votesN > 0) {
-                let tx = await boardContractIns.castVote.populateTransaction(proposalId, 2);
+                let tx = await boardContractInst.castVote.populateTransaction(proposalId, 2);
                 let gasEstimate = await ethers.provider.estimateGas(tx);
                 tx.gasLimit = gasEstimate;
                 let txResponse = await signers[i].sendTransaction(tx);
@@ -148,8 +146,6 @@ describe("Gov Org Test Cases", () => {
         boardContractInst = boardContractInst.connect(signers[1]);
 
         var otherAcTx = await boardContractInst.castVote.populateTransaction(proposalId, 1);
-        let gasEstimateOther = await ethers.provider.estimateGas(otherAcTx);
-        otherAcTx.gasLimit = gasEstimateOther;
         let txResponseOther = await signers[1].sendTransaction(otherAcTx);
         await txResponseOther.wait();
 

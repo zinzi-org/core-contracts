@@ -16,7 +16,7 @@ contract Members is ERC165, IERC721, IERC721Metadata {
     string public name = "Member";
     string public symbol = "MM";
 
-    mapping(uint256 => address) private _owners;
+ 
 
     mapping(uint256 => address) private _tokenIndexToBoardAddress;
 
@@ -32,13 +32,12 @@ contract Members is ERC165, IERC721, IERC721Metadata {
 
     mapping(uint256 => address) private _tokenIdToMetaAddress;
 
-    uint256 public _count = 1;
-    address public _boardFactoryAddress;
+    uint256 private _count = 1;
+    address private _boardFactoryAddress;
 
     string public _memberMetaURL = "https://www.zini.org/member/";
 
     constructor() {
-        _tokenIdToMember[0] = address(0);
         _boardFactoryAddress = msg.sender;
     }
 
@@ -48,7 +47,6 @@ contract Members is ERC165, IERC721, IERC721Metadata {
             "Request must come from board factory"
         );
         _safeMint(who, _count);
-        _tokenIdToMember[_count] = who;
         _tokenIndexToBoardAddress[_count] = boardAddress;
         _memberToTokenId[who] = _count;
         _memberToTokens[who].push(_count);
@@ -65,9 +63,8 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         GovernorBoardFactory x = GovernorBoardFactory(_boardFactoryAddress);
         bool isBoard = x.isBoard(msg.sender);
         require(isBoard, "Not a valid board address");
-        _tokenIdToMember[_count] = newMember;
-        _memberToTokenId[newMember] = _count;
         _safeMint(newMember, _count);
+        _memberToTokenId[newMember] = _count;
         _tokenIndexToBoardAddress[_count] = msg.sender;
         _memberToTokens[newMember].push(_count);
         _memberToGroup[newMember][msg.sender] = true;
@@ -108,7 +105,7 @@ contract Members is ERC165, IERC721, IERC721Metadata {
     function ownerOf(
         uint256 tokenId
     ) public view virtual override returns (address) {
-        address tokenOwner = _owners[tokenId];
+        address tokenOwner = _tokenIdToMember[tokenId];
         require(tokenOwner != address(0), "ERC721: invalid token ID");
         return tokenOwner;
     }
@@ -121,11 +118,11 @@ contract Members is ERC165, IERC721, IERC721Metadata {
     }
 
     function approve(address to, uint256 tokenId) public virtual override {
-        address tokeOwner = Members.ownerOf(tokenId);
-        require(to != tokeOwner, "ERC721: approval to current owner");
+        address tokenOwner = Members.ownerOf(tokenId);
+        require(to != tokenOwner, "ERC721: approval to current owner");
 
         require(
-            msg.sender == tokeOwner || isApprovedForAll(tokeOwner, msg.sender),
+            msg.sender == tokenOwner || isApprovedForAll(tokenOwner, msg.sender),
             "ERC721: approve caller is not token owner nor approved for all"
         );
 
@@ -220,7 +217,7 @@ contract Members is ERC165, IERC721, IERC721Metadata {
     }
 
     function _exists(uint256 tokenId) internal view virtual returns (bool) {
-        return _owners[tokenId] != address(0);
+        return _tokenIdToMember[tokenId] != address(0);
     }
 
     function _isApprovedOrOwner(
@@ -253,14 +250,14 @@ contract Members is ERC165, IERC721, IERC721Metadata {
         require(to != address(0), "ERC721: mint to the zero address");
         require(!_exists(tokenId), "ERC721: token already minted");
         _balances[to] += 1;
-        _owners[tokenId] = to;
+        _tokenIdToMember[tokenId] = to;
         emit Transfer(address(0), to, tokenId);
     }
 
     function _burn (uint256 tokenId) internal {
         address owner_ = Members.ownerOf(tokenId);
         _balances[owner_] -= 1;
-        delete _owners[tokenId];
+        delete _tokenIdToMember[tokenId];
         emit Transfer(owner_, address(0), tokenId);
     }
 
@@ -280,7 +277,6 @@ contract Members is ERC165, IERC721, IERC721Metadata {
 
         _balances[from] -= 1;
         _balances[to] += 1;
-        _owners[tokenId] = to;
 
         _memberToTokenId[to] = _memberToTokenId[from];
         _memberToTokenId[from] = 0;
